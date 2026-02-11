@@ -51,14 +51,14 @@ jobs:
         run: git diff --unified=3 HEAD^ HEAD > /tmp/diff.patch
       - name: Generate suggestions
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCS_REPO: your-org/docs-repo
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}   # add in repo Secrets
+          GITHUB_TOKEN: ${{ secrets.DOCS_PAT }}           # PAT with repo scope so action can read docs repo
+          DOCS_REPO: girishshankaran/docops-copilot-docs  # or set as repo variable DOCS_REPO
         run: |
           ts-node src/index.ts \
             --diff /tmp/diff.patch \
-            --docs-repo your-org/docs-repo \
-            --docs-branch main \
+            --docs-repo ${{ vars.DOCS_REPO || 'girishshankaran/docops-copilot-docs' }} \
+            --docs-branch ${DOCS_BRANCH:-main} \
             --out-dir suggestions \
             --code-repo ${{ github.repository }} \
             --comment-pr ${{ github.event.number }}
