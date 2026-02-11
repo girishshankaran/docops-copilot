@@ -22,13 +22,14 @@ jobs:
       - name: Generate doc suggestions
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Personal access token with repo scope so we can read the docs repo
+          GITHUB_TOKEN: ${{ secrets.DOCS_PAT }}
           DOCS_BRANCH: ${{ vars.DOCS_BRANCH || 'main' }}
         run: |
           ts-node src/index.ts \
             --diff /tmp/diff.patch \
             --docs-map docs-map.yaml \
-            --docs-repo ${{ vars.DOCS_REPO }} \
+            --docs-repo ${{ vars.DOCS_REPO || 'girishshankaran/docops-copilot-docs' }} \
             --docs-branch ${DOCS_BRANCH} \
             --out-dir suggestions \
             --code-repo ${{ github.repository }} \
