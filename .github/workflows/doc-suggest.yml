@@ -1,7 +1,7 @@
-name: Doc Suggestions (template)
+name: Doc Suggestions
 
 on:
-  push:
+  pull_request:
     branches: [main]
 
 permissions:
@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -22,10 +24,13 @@ jobs:
           npm install -g ts-node typescript
           npm install openai @octokit/rest js-yaml minimatch
       - name: Capture diff
-        run: git diff --unified=3 HEAD^ HEAD > /tmp/diff.patch
+        run: git diff --unified=3 ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} > /tmp/diff.patch
       - name: Generate doc suggestions
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4o-mini' }}
+          OPENAI_USER: ${{ secrets.OPENAI_USER }}
           # Personal access token with repo scope so we can read the docs repo
           GITHUB_TOKEN: ${{ secrets.DOCS_PAT }}
           DOCS_BRANCH: ${{ vars.DOCS_BRANCH || 'main' }}
@@ -37,7 +42,7 @@ jobs:
             --docs-branch ${DOCS_BRANCH} \
             --out-dir suggestions \
             --code-repo ${{ github.repository }} \
-            --comment-pr ${{ github.event.number }}
+            --comment-pr ${{ github.event.pull_request.number }}
       - uses: actions/upload-artifact@v4
         with:
           name: doc-suggestions
