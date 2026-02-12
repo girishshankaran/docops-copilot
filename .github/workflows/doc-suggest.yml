@@ -11,6 +11,9 @@ permissions:
 jobs:
   suggest:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -47,3 +50,32 @@ jobs:
         with:
           name: doc-suggestions
           path: suggestions
+      - name: Auto-apply patches to docs repo
+        if: ${{ env.DOCS_PAT != '' && github.event.pull_request.head.repo.fork == false }}
+        env:
+          DOCS_PAT: ${{ secrets.DOCS_PAT }}
+          DOCS_REPO: ${{ vars.DOCS_REPO || 'girishshankaran/docops-copilot-docs' }}
+          DOCS_BRANCH: ${{ vars.DOCS_BRANCH || 'main' }}
+          GITHUB_WORKSPACE: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          if ! ls "$GITHUB_WORKSPACE"/suggestions/*.patch 1>/dev/null 2>&1; then
+            echo "No patch files; skipping auto-apply."
+            exit 0
+          fi
+          git config --global user.name "doc-bot"
+          git config --global user.email "doc-bot@users.noreply.github.com"
+          git clone --depth=1 "https://${DOCS_PAT}@github.com/${DOCS_REPO}.git" /tmp/docs-repo
+          cd /tmp/docs-repo
+          git checkout "${DOCS_BRANCH}"
+          for p in "$GITHUB_WORKSPACE"/suggestions/*.patch; do
+            echo "Applying $p"
+            git apply "$p"
+          done
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No changes after applying patches."
+            exit 0
+          fi
+          git commit -am "Docs: auto-update from code change ($GITHUB_RUN_ID)"
+          git push origin "${DOCS_BRANCH}"
+        shell: bash
