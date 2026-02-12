@@ -265,6 +265,8 @@
         <button id="groupsBtn">Groups</button>
         <button id="sendRecognitionBtn">Recognition</button>
         <button id="quickPollBtn">Quick Poll</button>
+        <button id="shoutOutBtn">Shout Out</button>
+        <button id="callBtn" aria-label="Make a Webex call">📞 Call</button>
       </div>
       <div id="postsContainer"></div>
       <div id="postCreation" style="display: none; margin-top: 1rem;">
@@ -354,6 +356,41 @@
       </div>
     </div>
   </div>
+  <!-- Shout Out Modal -->
+  <div id="shoutModal" class="modal">
+    <div class="modal-content">
+      <div style="display:flex; align-items:center; justify-content: space-between; margin-bottom: 8px;">
+        <h2 style="margin:0;">Send a Shout Out</h2>
+        <button id="shoutCloseBtn" class="close-btn" aria-label="Close shout out form">&times;</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <input id="shoutName" type="text" placeholder="Recipient name" style="width: 100%; padding: 8px;" />
+        <input id="shoutEmail" type="email" placeholder="Recipient email" style="width: 100%; padding: 8px;" />
+        <textarea id="shoutMessage" placeholder="Message (optional)" style="width: 100%; padding: 8px; height: 90px;"></textarea>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+          <button id="shoutCancelBtn" style="background:#888;">Cancel</button>
+          <button id="shoutSendBtn">Send Shout Out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Call Modal -->
+  <div id="callModal" class="modal">
+    <div class="modal-content">
+      <div style="display:flex; align-items:center; justify-content: space-between; margin-bottom: 8px;">
+        <h2 style="margin:0;">Make a Webex Call</h2>
+        <button id="callCloseBtn" class="close-btn" aria-label="Close call form">&times;</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <input id="callCountry" type="text" placeholder="Country code (e.g., +1)" style="width: 100%; padding: 8px;" />
+        <input id="callNumber" type="tel" placeholder="Mobile number" style="width: 100%; padding: 8px;" />
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+          <button id="callCancelBtn" style="background:#888;">Cancel</button>
+          <button id="callStartBtn">Call</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <script>
     // DATA
     const employees = [
@@ -385,29 +422,42 @@
       { type: 'poll', author: 'HR Team', date: '2025-08-18', question: 'Do you like the new WFH policy?', options: ['Yes', 'No', 'Not Sure'], votes: [12, 5, 3], voters: {}, bu: ['All'] }
     ];
 
-    // Toolbar event listeners
-    document.getElementById('postsBtn').onclick = () => {
-      document.getElementById('postCreation').style.display = 'block';
+    function hideForms() {
+      document.getElementById('postCreation').style.display = 'none';
       document.getElementById('pollCreation').style.display = 'none';
       document.getElementById('groupsModal').style.display = 'none';
+      document.getElementById('groupCreationForm').style.display = 'none';
+      document.getElementById('groupsContainer').innerHTML = '';
+      document.getElementById('shoutModal').classList.remove('show');
+    }
+
+    // Toolbar event listeners
+    document.getElementById('postsBtn').onclick = () => {
+      hideForms();
+      document.getElementById('postCreation').style.display = 'block';
     };
     document.getElementById('quickPollBtn').onclick = () => {
+      hideForms();
       document.getElementById('pollCreation').style.display = 'block';
-      document.getElementById('postCreation').style.display = 'none';
-      document.getElementById('groupsModal').style.display = 'none';
     };
     document.getElementById('sendRecognitionBtn').onclick = () => {
       alert('Recognition feature coming soon!');
-      document.getElementById('postCreation').style.display = 'none';
-      document.getElementById('pollCreation').style.display = 'none';
-      document.getElementById('groupsModal').style.display = 'none';
+      hideForms();
     };
     document.getElementById('groupsBtn').onclick = () => {
+      hideForms();
       document.getElementById('groupsModal').style.display = 'flex';
-      document.getElementById('groupCreationForm').style.display = 'none';
       showGroups();
-      document.getElementById('postCreation').style.display = 'none';
-      document.getElementById('pollCreation').style.display = 'none';
+    };
+    document.getElementById('shoutOutBtn').onclick = () => {
+      hideForms();
+      document.getElementById('shoutModal').classList.add('show');
+      document.getElementById('shoutName').focus();
+    };
+    document.getElementById('callBtn').onclick = () => {
+      hideForms();
+      document.getElementById('callModal').classList.add('show');
+      document.getElementById('callCountry').focus();
     };
     // Groups modal logic
     document.getElementById('groupsModalClose').onclick = () => {
@@ -424,6 +474,12 @@
         document.getElementById('groupsModal').style.display = 'none';
         document.getElementById('groupCreationForm').style.display = 'none';
         document.getElementById('groupsContainer').innerHTML = '';
+      }
+      if (e.target === document.getElementById('shoutModal')) {
+        closeShout();
+      }
+      if (e.target === document.getElementById('callModal')) {
+        closeCall();
       }
     };
 
@@ -445,6 +501,34 @@
       document.getElementById('groupNameInput').value = '';
       document.getElementById('groupCriteriaInput').value = '';
       showGroups();
+    };
+
+    // Shout Out form handlers
+    document.getElementById('shoutCloseBtn').onclick = closeShout;
+    document.getElementById('shoutCancelBtn').onclick = closeShout;
+    document.getElementById('shoutSendBtn').onclick = () => {
+      const name = document.getElementById('shoutName').value.trim();
+      const email = document.getElementById('shoutEmail').value.trim();
+      const message = document.getElementById('shoutMessage').value.trim();
+      if (!name || !email) {
+        alert('Please enter both name and email.');
+        return;
+      }
+      alert(`Shout out sent to ${name} (${email})${message ? '\\nMessage: ' + message : ''}`);
+      closeShout();
+    };
+    // Call form handlers
+    document.getElementById('callCloseBtn').onclick = closeCall;
+    document.getElementById('callCancelBtn').onclick = closeCall;
+    document.getElementById('callStartBtn').onclick = () => {
+      const cc = document.getElementById('callCountry').value.trim();
+      const num = document.getElementById('callNumber').value.trim();
+      if (!cc || !num) {
+        alert('Please enter both country code and mobile number.');
+        return;
+      }
+      alert(`Starting Webex call to ${cc} ${num}...`);
+      closeCall();
     };
 
     function showGroups() {
@@ -584,6 +668,13 @@
       clearPollForm();
     };
 
+    function closeShout() {
+      document.getElementById('shoutName').value = '';
+      document.getElementById('shoutEmail').value = '';
+      document.getElementById('shoutMessage').value = '';
+      document.getElementById('shoutModal').classList.remove('show');
+    }
+
     function clearPostForm() {
       document.getElementById('postTitle').value = '';
       document.getElementById('postContent').value = '';
@@ -595,6 +686,12 @@
       document.getElementById('pollQuestion').value = '';
       document.getElementById('pollOptions').value = '';
       document.getElementById('pollBU').selectedIndex = 0;
+    }
+
+    function closeCall() {
+      document.getElementById('callCountry').value = '';
+      document.getElementById('callNumber').value = '';
+      document.getElementById('callModal').classList.remove('show');
     }
   </script>
 </body>
