@@ -1,19 +1,16 @@
 name: Doc Suggestions
 
 on:
-  pull_request:
+  push:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
   suggest:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,7 +24,7 @@ jobs:
           npm install -g ts-node typescript
           npm install openai @octokit/rest js-yaml minimatch
       - name: Capture diff
-        run: git diff --unified=3 ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} > /tmp/diff.patch
+        run: git diff --unified=3 HEAD^ HEAD > /tmp/diff.patch
       - name: Generate doc suggestions
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -44,14 +41,13 @@ jobs:
             --docs-repo ${{ vars.DOCS_REPO || 'girishshankaran/docops-copilot-docs' }} \
             --docs-branch ${DOCS_BRANCH} \
             --out-dir suggestions \
-            --code-repo ${{ github.repository }} \
-            --comment-pr ${{ github.event.pull_request.number }}
+            --code-repo ${{ github.repository }}
       - uses: actions/upload-artifact@v4
         with:
           name: doc-suggestions
           path: suggestions
       - name: Auto-apply patches to docs repo
-        if: ${{ env.DOCS_PAT != '' && github.event.pull_request.head.repo.fork == false }}
+        if: ${{ env.DOCS_PAT != '' }}
         env:
           DOCS_PAT: ${{ secrets.DOCS_PAT }}
           DOCS_REPO: ${{ vars.DOCS_REPO || 'girishshankaran/docops-copilot-docs' }}
