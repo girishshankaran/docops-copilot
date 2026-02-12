@@ -265,7 +265,6 @@
         <button id="groupsBtn">Groups</button>
         <button id="sendRecognitionBtn">Recognition</button>
         <button id="quickPollBtn">Quick Poll</button>
-        <button id="shoutOutBtn">Shout Out</button>
         <button id="callBtn" aria-label="Make a Webex call">📞 Call</button>
       </div>
       <div id="postsContainer"></div>
@@ -357,23 +356,6 @@
     </div>
   </div>
   <!-- Shout Out Modal -->
-  <div id="shoutModal" class="modal">
-    <div class="modal-content">
-      <div style="display:flex; align-items:center; justify-content: space-between; margin-bottom: 8px;">
-        <h2 style="margin:0;">Send a Shout Out</h2>
-        <button id="shoutCloseBtn" class="close-btn" aria-label="Close shout out form">&times;</button>
-      </div>
-      <div style="display:flex; flex-direction:column; gap:10px;">
-        <input id="shoutName" type="text" placeholder="Recipient name" style="width: 100%; padding: 8px;" />
-        <input id="shoutEmail" type="email" placeholder="Recipient email" style="width: 100%; padding: 8px;" />
-        <textarea id="shoutMessage" placeholder="Message (optional)" style="width: 100%; padding: 8px; height: 90px;"></textarea>
-        <div style="display:flex; gap:10px; justify-content:flex-end;">
-          <button id="shoutCancelBtn" style="background:#888;">Cancel</button>
-          <button id="shoutSendBtn">Send Shout Out</button>
-        </div>
-      </div>
-    </div>
-  </div>
   <!-- Call Modal -->
   <div id="callModal" class="modal">
     <div class="modal-content">
@@ -428,7 +410,6 @@
       document.getElementById('groupsModal').style.display = 'none';
       document.getElementById('groupCreationForm').style.display = 'none';
       document.getElementById('groupsContainer').innerHTML = '';
-      document.getElementById('shoutModal').classList.remove('show');
     }
 
     // Toolbar event listeners
@@ -448,11 +429,6 @@
       hideForms();
       document.getElementById('groupsModal').style.display = 'flex';
       showGroups();
-    };
-    document.getElementById('shoutOutBtn').onclick = () => {
-      hideForms();
-      document.getElementById('shoutModal').classList.add('show');
-      document.getElementById('shoutName').focus();
     };
     document.getElementById('callBtn').onclick = () => {
       hideForms();
@@ -474,9 +450,6 @@
         document.getElementById('groupsModal').style.display = 'none';
         document.getElementById('groupCreationForm').style.display = 'none';
         document.getElementById('groupsContainer').innerHTML = '';
-      }
-      if (e.target === document.getElementById('shoutModal')) {
-        closeShout();
       }
       if (e.target === document.getElementById('callModal')) {
         closeCall();
@@ -503,20 +476,6 @@
       showGroups();
     };
 
-    // Shout Out form handlers
-    document.getElementById('shoutCloseBtn').onclick = closeShout;
-    document.getElementById('shoutCancelBtn').onclick = closeShout;
-    document.getElementById('shoutSendBtn').onclick = () => {
-      const name = document.getElementById('shoutName').value.trim();
-      const email = document.getElementById('shoutEmail').value.trim();
-      const message = document.getElementById('shoutMessage').value.trim();
-      if (!name || !email) {
-        alert('Please enter both name and email.');
-        return;
-      }
-      alert(`Shout out sent to ${name} (${email})${message ? '\\nMessage: ' + message : ''}`);
-      closeShout();
-    };
     // Call form handlers
     document.getElementById('callCloseBtn').onclick = closeCall;
     document.getElementById('callCancelBtn').onclick = closeCall;

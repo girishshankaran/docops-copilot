@@ -6,6 +6,8 @@ mappings:
     docs: "docs/cli.md"
   - code: "config/**/*"
     docs: "docs/configuration.md"
+  - code: "ui/home1.html"
+    docs: "docs/ui/home1.md"
 fallback:
   search_headings: true
 style_guide: "docs/STYLE.md"
