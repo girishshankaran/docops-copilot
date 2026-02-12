@@ -117,12 +117,42 @@ jobs:
   style_guide: "docs/STYLE.md"
   ```
 - Style guide is optional; when present it is fed to the model to preserve tone.
+- LLM config:
+  - Default: OpenAI API, model `gpt-4o-mini`. Optional `OPENAI_BASE_URL`/`OPENAI_MODEL` to point at a compatible endpoint.
+  - Azure OpenAI: set `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, and (optional) `AZURE_OPENAI_API_VERSION`. You can also use flags `--azure`, `--azure-endpoint`, `--azure-deployment`, `--azure-api-version`.
+
+## Sample UI asset
+- `ui/home1.html` – static Cisco Social home mock (posts, groups, polls). Open directly in a browser to preview; no build step required.
+
+## Using Azure OpenAI
+- Add to `.env`:
+  - `AZURE_OPENAI_API_KEY=...`
+  - `AZURE_OPENAI_ENDPOINT=https://<resource>.openai.azure.com`
+  - `AZURE_OPENAI_DEPLOYMENT=<your-deployment>`
+  - `AZURE_OPENAI_API_VERSION=2024-10-01-preview` (or your version)
+- Run with the Azure client by either:
+  - Passing `--azure --azure-endpoint ... --azure-deployment ...`, or
+  - Setting the env vars above (auto-detected).
+- Model name passed to the API is the deployment name; keep `--model`/`OPENAI_MODEL` in sync with your deployment if you prefer using that flag instead of `AZURE_OPENAI_DEPLOYMENT`.
 
 ## Security & guardrails
 - Low-temp model call (`temperature: 0.2`) to reduce hallucinations.
 - Only touches mapped docs; if no mapping, it reports coverage gap.
 - Patches are reviewed by humans (comment + apply command) before landing.
 - Build/lint step prevents broken docs from merging.
+
+## Offline/mock testing (no OpenAI call)
+- Run the CLI with `--mock` to skip the OpenAI API and emit a deterministic placeholder patch:
+  ```bash
+  npx ts-node src/index.ts \
+    --diff /tmp/diff.patch \
+    --docs-map docs-map.yaml \
+    --docs-repo girishshankaran/docops-copilot-docs \
+    --docs-branch main \
+    --out-dir suggestions \
+    --mock
+  ```
+  Use this to test the pipeline, artifact outputs, and patch handling without any API usage.
 
 ## Project structure
 - `src/index.ts` – main CLI to generate doc patches from code diff.

@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cisco Social - Home</title>
+  <style>
+    /* Keep all previous styles. Only modal header layout slightly adjusted for spacing. */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f6f8;
+      color: #333;
+    }
+
+    header {
+      background: #2a6ebb;
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    .search-bar input {
+      padding: 0.4rem 0.8rem;
+      font-size: 1rem;
+      border-radius: 4px;
+      border: none;
+      width: 250px;
+    }
+
+    .container {
+      display: flex;
+      padding: 2rem;
+      gap: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .main-feed {
+      flex: 3;
+      background: white;
+      padding: 1rem 1.5rem;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, .1);
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .sidebar {
+      flex: 1.6;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .section {
+      background: white;
+      padding: 1rem 1.2rem;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, .1);
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 1.2rem;
+      color: #2a6ebb;
+      border-bottom: 2px solid #2a6ebb;
+      margin-bottom: 1rem;
+    }
+    button {
+      cursor: pointer;
+      background: #2a6ebb;
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      transition: background-color 0.3s;
+      user-select: none;
+    }
+    button:hover {
+      background: #196bc1;
+    }
+    .webex-btn {
+      background: #00b140;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      border: none;
+      margin-left: 10px;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .webex-btn:hover {
+      background: #008930;
+    }
+    .wish-btn {
+      background: #338034;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      margin-left: 10px;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .wish-btn:hover {
+      background: #276628;
+    }
+    .actions {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .actions button {
+      flex: 1 1 140px;
+      font-weight: 600;
+      min-width: 120px;
+    }
+    .post,
+    .poll {
+      margin-bottom: 1.2rem;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .post h3,
+    .poll-question {
+      margin: 0.2rem 0 0.5rem;
+      color: #1e5599;
+    }
+    .post time,
+    .poll time {
+      font-size: 0.85rem;
+      color: #666;
+      margin-left: 8px;
+    }
+    .post-tags span {
+      background: #d9e9fe;
+      color: #1e5599;
+      padding: 2px 6px;
+      margin-right: 6px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      user-select: none;
+    }
+
+    .post-actions,
+    .poll-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 6px;
+    }
+    button:hover {
+      filter: brightness(0.95);
+    }
+    .poll-block {
+      background: #ecf4fe;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+    .poll-options {
+      list-style-type: none;
+      padding: 0;
+      margin: 0 0 12px 0;
+      user-select: none;
+    }
+    .poll-options li {
+      margin: 5px 0;
+    }
+    .poll-results {
+      color: #1e5599;
+      font-weight: 600;
+    }
+    .poll-results span {
+      margin-right: 20px;
+      font-size: 0.9rem;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.show {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      width: 420px;
+      max-width: 90vw;
+      padding: 20px 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+      position: relative;
+      user-select: none;
+    }
+    .close-btn {
+      position: static;
+      font-size: 22px;
+      font-weight: bold;
+      color: #999;
+      cursor: pointer;
+      user-select: none;
+      margin-left: 30px;
+    }
+    .close-btn:hover {
+      color: #555;
+    }
+    .group-header-wrapper {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .group-header-wrapper .group-name {
+      cursor: pointer;
+      flex-grow: 1;
+      background: #eef6ff;
+      color: #1e5599;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 8px;
+      user-select: none;
+      transition: background-color 0.2s;
+    }
+    .group-header-wrapper .group-name:hover {
+      background: #d3e4ff;
+    }
+    .group-members {
+      margin-left: 24px;
+      border-left: 3px solid #1e5599;
+      padding-left: 12px;
+      color: #444;
+      user-select: none;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Cisco Social</h1>
+    <div class="search-bar">
+      <input type="text" placeholder="Search colleagues, docs..." />
+    </div>
+  </header>
+  <div class="container">
+    <main class="main-feed">
+      <div class="actions">
+        <button id="postsBtn">Posts</button>
+        <button id="groupsBtn">Groups</button>
+        <button id="sendRecognitionBtn">Recognition</button>
+        <button id="quickPollBtn">Quick Poll</button>
+      </div>
+      <div id="postsContainer"></div>
+      <div id="postCreation" style="display: none; margin-top: 1rem;">
+        <h3>Create Post</h3>
+        <input id="postTitle" type="text" placeholder="Title" style="width: 100%; padding: 8px; margin-bottom: 8px" />
+        <textarea id="postContent" placeholder="What's on your mind?" style="width: 100%; padding: 8px; margin-bottom: 8px; height: 80px"></textarea>
+        <input id="postTags" type="text" placeholder="Tags (comma separated)" style="width: 100%; padding: 8px; margin-bottom: 8px" />
+        <select id="postBU" multiple style="width: 100%; padding: 8px; margin-bottom: 8px;">
+          <option value="All">All</option>
+          <option value="Marketing">Marketing</option>
+          <option value="Engineering">Engineering</option>
+          <option value="Sales">Sales</option>
+          <option value="HR">HR</option>
+        </select>
+        <button id="postSubmit">Post</button>
+        <button id="postCancel" style="margin-left: 8px;">Cancel</button>
+      </div>
+      <div id="pollCreation" style="display: none; margin-top: 1rem;">
+        <h3>Create Quick Poll</h3>
+        <input id="pollQuestion" placeholder="Poll question" style="width: 100%; padding: 8px; margin-bottom: 8px" />
+        <textarea id="pollOptions" placeholder="One option per line" style="width: 100%; padding: 8px; margin-bottom: 8px; height: 80px"></textarea>
+        <select id="pollBU" multiple style="width: 100%; padding: 8px; margin-bottom: 8px;">
+          <option value="All">All</option>
+          <option value="Marketing">Marketing</option>
+          <option value="Engineering">Engineering</option>
+          <option value="Sales">Sales</option>
+          <option value="HR">HR</option>
+        </select>
+        <button id="pollSubmit">Post</button>
+        <button id="pollCancel" style="margin-left: 8px;">Cancel</button>
+      </div>
+    </main>
+    <aside class="sidebar">
+      <section class="section">
+        <h2>Upcoming Events</h2>
+        <div>Wellness Webinar - Aug 25 <button>RSVP</button></div>
+        <div>Team Coffee Chat - Aug 22 <button>RSVP</button></div>
+        <div>Cisco Content Expo - March 2026 <button>RSVP</button></div>
+      </section>
+      <section class="section">
+        <h2>Job Opportunities</h2>
+        <div>Data Scientist - New York <button>Apply</button></div>
+        <div>UX Designer - Remote <button>Apply</button></div>
+        <div>Cloud Engineer - San Francisco <button>Apply</button></div>
+      </section>
+      <section class="section">
+        <h2>New Hires</h2>
+        <div class="new-hire">
+          Emma L. (Marketing) <button class="wish-btn" onclick="wishGoodLuck('Emma L.')">Wish</button>
+        </div>
+        <div class="new-hire">
+          Raj S. (Engineering) <button class="wish-btn" onclick="wishGoodLuck('Raj S.')">Wish</button>
+        </div>
+        <div class="new-hire">
+          Sara P. (HR) <button class="wish-btn" onclick="wishGoodLuck('Sara P.')">Wish</button>
+        </div>
+      </section>
+      <section class="section">
+        <h2>Work Anniversaries</h2>
+        <div>John M. - 5 Years</div>
+        <div>Alice R. - 3 Years</div>
+        <div>David K. - 1 Year</div>
+      </section>
+      <section class="section">
+        <h2>Notifications</h2>
+        <div>New message from Sarah J.</div>
+        <div>You received a badge from Raj P.</div>
+        <div>Project deadline updated</div>
+      </section>
+    </aside>
+  </div>
+  <!-- Groups Modal with "New" button aligned and spaced to the right of heading -->
+  <div id="groupsModal" class="modal">
+    <div class="modal-content">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center;">
+          <h2 style="margin: 0;">Groups</h2>
+          <button id="groupsNewBtn" style="margin-left: 24px; font-size: 1rem; padding: 7px 18px;">New</button>
+        </div>
+        <button id="groupsModalClose" class="close-btn" style="margin-left: 35px;">&times;</button>
+      </div>
+      <div id="groupsContainer" style="margin-top: 1.1rem;"></div>
+      <div id="groupCreationForm" style="display:none; margin-top: 1rem;">
+        <input id="groupNameInput" type="text" placeholder="Group Name" style="width: 100%; padding: 8px; margin-bottom: 8px" />
+        <textarea id="groupCriteriaInput" placeholder="Criteria (skills, departments)" style="width: 100%; padding: 8px; margin-bottom: 8px; height: 80px"></textarea>
+        <button id="groupCreateSubmitBtn">Create Group</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    // DATA
+    const employees = [
+      { name: 'Emma L.', skills: ['Marketing', 'AI'] },
+      { name: 'Raj S.', skills: ['Engineering', 'Machine Learning'] },
+      { name: 'Sara P.', skills: ['HR'] },
+      { name: 'David K.', skills: ['Engineering', 'AI'] },
+      { name: 'Alice R.', skills: ['UX Design', 'AI'] },
+      { name: 'John M.', skills: ['Marketing'] },
+      { name: 'Priya S.', skills: ['AI', 'Engineering'] },
+      { name: 'Chris W.', skills: ['UX Design', 'Machine Learning'] },
+      { name: 'Megan G.', skills: ['Engineering', 'AI'] },
+      { name: 'Luis Q.', skills: ['Engineering', 'AI', 'UX Design'] },
+      { name: 'Brian Z.', skills: ['Machine Learning', 'Engineering'] },
+      { name: 'Mei T.', skills: ['AI', 'UX Design'] },
+      { name: 'Anil R.', skills: ['Marketing', 'Engineering'] }
+    ];
+
+    let groups = [
+      // CHANGED "Marketers" group to "Python Group" and set Webex link
+      { name: "AI Engineers", criteria: ["ai", "machine learning", "engineering"], members: ["Raj S.", "David K.", "Priya S.", "Megan G.", "Brian Z."], webex: "https://webex.com/meet/ai-engineers" },
+      { name: "UX Designers", criteria: ["ux design"], members: ["Alice R.", "Chris W.", "Luis Q.", "Mei T."], webex: "https://webex.com/meet/ux-designers" },
+      { name: "Python Group", criteria: ["marketing"], members: ["Emma L.", "John M.", "Anil R.", "Sara P."], webex: "https://cisco.webex.com/meet/gisankar" }, // <-- changed
+      { name: "ML Innovators", criteria: ["machine learning"], members: ["Raj S.", "Chris W.", "Brian Z.", "Priya S."], webex: "https://webex.com/meet/ml-innovators" }
+    ];
+
+    let posts = [
+      { type: 'post', author: 'Lisa T.', date: '2025-08-20', title: 'Great teamwork on Q3 launch', content: 'Shoutout to team!', tags: ['#Q3', '#Success'], bu: ['All'] },
+      { type: 'poll', author: 'HR Team', date: '2025-08-18', question: 'Do you like the new WFH policy?', options: ['Yes', 'No', 'Not Sure'], votes: [12, 5, 3], voters: {}, bu: ['All'] }
+    ];
+
+    // Toolbar event listeners
+    document.getElementById('postsBtn').onclick = () => {
+      document.getElementById('postCreation').style.display = 'block';
+      document.getElementById('pollCreation').style.display = 'none';
+      document.getElementById('groupsModal').style.display = 'none';
+    };
+    document.getElementById('quickPollBtn').onclick = () => {
+      document.getElementById('pollCreation').style.display = 'block';
+      document.getElementById('postCreation').style.display = 'none';
+      document.getElementById('groupsModal').style.display = 'none';
+    };
+    document.getElementById('sendRecognitionBtn').onclick = () => {
+      alert('Recognition feature coming soon!');
+      document.getElementById('postCreation').style.display = 'none';
+      document.getElementById('pollCreation').style.display = 'none';
+      document.getElementById('groupsModal').style.display = 'none';
+    };
+    document.getElementById('groupsBtn').onclick = () => {
+      document.getElementById('groupsModal').style.display = 'flex';
+      document.getElementById('groupCreationForm').style.display = 'none';
+      showGroups();
+      document.getElementById('postCreation').style.display = 'none';
+      document.getElementById('pollCreation').style.display = 'none';
+    };
+    // Groups modal logic
+    document.getElementById('groupsModalClose').onclick = () => {
+      document.getElementById('groupsModal').style.display = 'none';
+      document.getElementById('groupCreationForm').style.display = 'none';
+      document.getElementById('groupsContainer').innerHTML = '';
+    };
+    document.getElementById('groupsNewBtn').onclick = () => {
+      document.getElementById('groupsContainer').innerHTML = '';
+      document.getElementById('groupCreationForm').style.display = 'block';
+    };
+    window.onclick = function (e) {
+      if (e.target === document.getElementById('groupsModal')) {
+        document.getElementById('groupsModal').style.display = 'none';
+        document.getElementById('groupCreationForm').style.display = 'none';
+        document.getElementById('groupsContainer').innerHTML = '';
+      }
+    };
+
+    document.getElementById('groupCreateSubmitBtn').onclick = () => {
+      const name = document.getElementById('groupNameInput').value.trim();
+      const criteriaText = document.getElementById('groupCriteriaInput').value.trim();
+      if (!name || !criteriaText) {
+        alert('Please fill both Group Name and Criteria.');
+        return;
+      }
+      const criteria = criteriaText.split(',').map(c => c.trim().toLowerCase());
+      const members = employees.filter(e => e.skills.some(s => criteria.includes(s.toLowerCase()))).map(e => e.name);
+      // If creating "Python Group", always use the special Cisco Webex link
+      const url = name.toLowerCase() === 'python group'
+        ? 'https://cisco.webex.com/meet/gisankar'
+        : `https://webex.com/meet/${encodeURIComponent(name.toLowerCase().replace(/\s+/g, '-'))}`;
+      groups.push({ name, criteria, members, webex: url });
+      document.getElementById('groupCreationForm').style.display = 'none';
+      document.getElementById('groupNameInput').value = '';
+      document.getElementById('groupCriteriaInput').value = '';
+      showGroups();
+    };
+
+    function showGroups() {
+      const groupsContainer = document.getElementById('groupsContainer');
+      groupsContainer.innerHTML = '';
+      groups.forEach((g, idx) => {
+        const div = document.createElement('div');
+        div.style.marginBottom = '12px';
+
+        const header = document.createElement('div');
+        header.className = 'group-header-wrapper';
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'group-name';
+        nameDiv.textContent = g.name;
+        nameDiv.onclick = () => showMembers(idx);
+
+        const meetBtn = document.createElement('button');
+        meetBtn.className = 'webex-btn';
+        meetBtn.textContent = 'Meet';
+        // For Python Group, use the special Cisco Webex link
+        meetBtn.onclick = (e) => {
+          e.stopPropagation();
+          if (g.name.toLowerCase() === 'python group') {
+            window.open('https://cisco.webex.com/meet/gisankar', '_blank');
+          } else {
+            window.open(g.webex, '_blank');
+          }
+        };
+
+        header.appendChild(nameDiv);
+        header.appendChild(meetBtn);
+        div.appendChild(header);
+
+        groupsContainer.appendChild(div);
+      });
+    }
+
+    function showMembers(idx) {
+      const g = groups[idx];
+      // For Python Group, use the special Cisco Webex link
+      const meetUrl = g.name.toLowerCase() === 'python group'
+        ? 'https://cisco.webex.com/meet/gisankar'
+        : g.webex;
+      document.getElementById('groupsContainer').innerHTML = `
+        <div class="group-header-wrapper">
+          <div class="group-name">${g.name}</div>
+          <button class="webex-btn" onclick="window.open('${meetUrl}', '_blank')">Meet</button>
+        </div>
+        <div class="group-members"><strong>Members:</strong><br>${g.members.join('<br>')}</div>
+      `;
+    }
+
+    // Posts and Polls rendering and controls
+    function renderPosts() {
+      postsContainer.innerHTML = '';
+      posts.forEach((post, idx) => {
+        if (post.type === 'post') {
+          const div = document.createElement('div');
+          div.className = 'post';
+          div.innerHTML = `
+            <strong>${sanitize(post.author)}</strong> <time>${sanitize(post.date)}</time>
+            <h3>${sanitize(post.title)}</h3>
+            <p>${sanitize(post.content)}</p>
+            <div>${post.tags.map(t => `<span>${sanitize(t)}</span>`).join('')}</div>
+            <div><em>Visible to: ${sanitize(post.bu.join(', '))}</em></div>
+            <div><button>👍 Like</button><button>💬 Comment</button><button>🔄 Share</button></div>
+          `;
+          postsContainer.appendChild(div);
+        } else if (post.type === 'poll') {
+          postsContainer.appendChild(renderPoll(post, idx));
+        }
+      });
+    }
+
+    function renderPoll(post, idx) {
+      const div = document.createElement('div');
+      div.className = 'poll';
+      div.innerHTML = `
+        <strong>${sanitize(post.author)}</strong> <time>${sanitize(post.date)}</time>
+        <div class="poll-block">
+          <div class="poll-question">${sanitize(post.question)}</div>
+          <div><em>Visible to: ${sanitize(post.bu.join(', '))}</em></div>
+          <div id="pollArea${idx}"></div>
+        </div>
+      `;
+      const pollArea = div.querySelector(`#pollArea${idx}`);
+
+      if (!(post.voters && post.voters['demo-user'])) {
+        const form = document.createElement('form');
+        form.innerHTML = post.options.map((opt, oidx) => `
+          <label style="display:block;margin:4px 0">
+            <input type="radio" name="opt${idx}" value="${oidx}"/> ${sanitize(opt)}
+          </label>`).join('') + `<button type="submit">Vote</button>`;
+        form.onsubmit = e => {
+          e.preventDefault();
+          const sel = form.querySelector('input[name=opt' + idx + ']:checked');
+          if (!sel) return;
+          if (!post.voters) post.voters = {};
+          post.voters['demo-user'] = sel.value;
+          post.votes[sel.value] = (post.votes[sel.value] || 0) + 1;
+          renderPosts();
+        };
+        pollArea.appendChild(form);
+      } else {
+        const totalVotes = post.votes.reduce((a, b) => a + b, 0) || 1;
+        let html = '';
+        post.options.forEach((opt, i) => {
+          const pct = Math.round((post.votes[i] || 0) * 100 / totalVotes);
+          html += `<span>${sanitize(opt)}: ${pct}% (${post.votes[i] || 0})</span> `;
+        });
+        pollArea.innerHTML = `<div class="poll-results">${html}</div><div>Thanks for voting!</div>`;
+      }
+
+      return div;
+    }
+
+    function sanitize(str) {
+      return str.replace(/[&<>"']/g, function (m) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
+      });
+    }
+
+    function wishGoodLuck(name) {
+      alert(`Good luck wishes sent to ${name}! 🎉`);
+    }
+    window.wishGoodLuck = wishGoodLuck;
+
+    renderPosts();
+
+    document.getElementById('postCancel').onclick = () => {
+      postCreation.style.display = 'none';
+      clearPostForm();
+    };
+    document.getElementById('pollCancel').onclick = () => {
+      pollCreation.style.display = 'none';
+      clearPollForm();
+    };
+
+    function clearPostForm() {
+      document.getElementById('postTitle').value = '';
+      document.getElementById('postContent').value = '';
+      document.getElementById('postTags').value = '';
+      document.getElementById('postBU').selectedIndex = 0;
+    }
+
+    function clearPollForm() {
+      document.getElementById('pollQuestion').value = '';
+      document.getElementById('pollOptions').value = '';
+      document.getElementById('pollBU').selectedIndex = 0;
+    }
+  </script>
+</body>
+</html>

@@ -2,8 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
 import { Octokit } from '@octokit/rest';
-import minimatch from 'minimatch';
-import OpenAI from 'openai';
+import { minimatch } from 'minimatch';
+import OpenAI, { AzureOpenAI } from 'openai';
 
 interface DocsMapMapping {
   code: string;
@@ -22,6 +22,23 @@ interface TargetDoc {
   anchor?: string;
   matchedFiles: string[];
 }
+
+const loadEnvFile = () => {
+  const envPath = path.join(process.cwd(), '.env');
+  if (!fs.existsSync(envPath)) return;
+  const content = fs.readFileSync(envPath, 'utf8');
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const idx = trimmed.indexOf('=');
+    if (idx === -1) continue;
+    const key = trimmed.slice(0, idx).trim();
+    const value = trimmed.slice(idx + 1).trim();
+    if (!process.env[key]) process.env[key] = value;
+  }
+};
+
+loadEnvFile();
 
 const readFileSafe = (p: string): string | undefined => {
   try {
@@ -48,7 +65,15 @@ const parseArgs = () => {
     commentPr: get('--comment-pr'),
     codeRepo: get('--code-repo'),
     styleGuidePath: get('--style-guide'),
+    openaiBaseUrl: get('--openai-base-url', process.env.OPENAI_BASE_URL),
+    model: get('--model', process.env.OPENAI_MODEL || 'gpt-4o-mini'),
+    azure: has('--azure') || Boolean(process.env.AZURE_OPENAI_ENDPOINT),
+    azureEndpoint: get('--azure-endpoint', process.env.AZURE_OPENAI_ENDPOINT),
+    azureDeployment: get('--azure-deployment', process.env.AZURE_OPENAI_DEPLOYMENT),
+    azureApiVersion: get('--azure-api-version', process.env.AZURE_OPENAI_API_VERSION || '2024-10-01-preview'),
+    user: get('--user', process.env.OPENAI_USER),
     verbose: has('--verbose'),
+    mock: has('--mock'),
   };
 };
 
@@ -147,16 +172,25 @@ const buildPrompt = (params: {
   ].filter(Boolean).join('\n\n');
 };
 
-const generatePatch = async (client: OpenAI, prompt: string): Promise<string> => {
+const generatePatch = async (
+  client: OpenAI | AzureOpenAI,
+  model: string,
+  prompt: string,
+  user?: string,
+): Promise<string> => {
   const completion = await client.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model,
     temperature: 0.2,
     messages: [
       { role: 'system', content: 'You generate minimal documentation patches from code diffs.' },
       { role: 'user', content: prompt },
     ],
+    ...(user ? { user } : {}),
   });
-  const text = completion.choices[0].message.content || '';
+  if (!completion || !Array.isArray((completion as any).choices) || (completion as any).choices.length === 0) {
+    throw new Error(`LLM response missing choices: ${JSON.stringify(completion)}`);
+  }
+  const text = (completion as any).choices[0]?.message?.content || '';
   const match = text.match(/```patch\n([\s\S]*?)```/);
   return match ? match[1].trim() : text.trim();
 };
@@ -165,12 +199,48 @@ const ensureDir = (p: string) => {
   if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
 };
 
+const createClient = (args: ReturnType<typeof parseArgs>) => {
+  if (args.azure) {
+    // Avoid conflicts with OpenAI baseURL when using Azure client.
+    if (process.env.OPENAI_BASE_URL) delete process.env.OPENAI_BASE_URL;
+    if (!args.azureEndpoint) throw new Error('AZURE_OPENAI_ENDPOINT is required for Azure usage');
+    if (!process.env.AZURE_OPENAI_API_KEY) throw new Error('AZURE_OPENAI_API_KEY is required for Azure usage');
+    const deployment = args.azureDeployment || args.model;
+    if (!deployment) throw new Error('AZURE_OPENAI_DEPLOYMENT (or --model) is required for Azure usage');
+    const client = new AzureOpenAI({
+      apiKey: process.env.AZURE_OPENAI_API_KEY,
+      endpoint: args.azureEndpoint,
+      apiVersion: args.azureApiVersion,
+    });
+    return { client, model: deployment };
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+  const model = args.model || 'gpt-4o-mini';
+  const client = new OpenAI({
+    apiKey,
+    baseURL: args.openaiBaseUrl,
+    // Some gateways expect `api-key` header instead of Authorization: Bearer
+    defaultHeaders: { 'api-key': apiKey },
+  });
+  return { client, model };
+};
+
 const writeSuggestionFiles = (outDir: string, docPath: string, patch: string, rationale?: string) => {
   ensureDir(outDir);
   const safeName = docPath.replace(/[\\/]/g, '__');
   fs.writeFileSync(path.join(outDir, `${safeName}.patch`), patch, 'utf8');
   if (rationale) fs.writeFileSync(path.join(outDir, `${safeName}.txt`), rationale, 'utf8');
 };
+
+const buildMockPatch = (docPath: string): string =>
+  [
+    `--- a/${docPath}`,
+    `+++ b/${docPath}`,
+    '@@',
+    '+<!-- mock patch: generated locally without OpenAI -->',
+  ].join('\n');
 
 const buildCommentBody = (items: { docPath: string; patch: string; matchedFiles: string[] }[]): string => {
   const lines: string[] = [];
@@ -188,9 +258,13 @@ const buildCommentBody = (items: { docPath: string; patch: string; matchedFiles:
 const main = async () => {
   const args = parseArgs();
   if (!args.docsRepo) throw new Error('docs repo is required (--docs-repo or DOCS_REPO env)');
+  const docsRepo = args.docsRepo as string;
+  const docsBranch = args.docsBranch || 'main';
+  const docsMapPath = args.docsMapPath || 'docs-map.yaml';
+  const outDir = args.outDir || 'suggestions';
   const diff = args.diffPath ? readFileSafe(args.diffPath) : undefined;
   if (!diff) throw new Error('diff is required; pass --diff path');
-  const docsMap = loadDocsMap(args.docsMapPath);
+  const docsMap = loadDocsMap(docsMapPath);
   const fileDiffs = parseDiffFiles(diff);
   const changedFiles = Array.from(fileDiffs.keys());
   const targets = resolveTargets(changedFiles, docsMap);
@@ -200,30 +274,37 @@ const main = async () => {
   }
 
   const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-  const openaiApiKey = process.env.OPENAI_API_KEY;
-  if (!openaiApiKey) throw new Error('OPENAI_API_KEY missing');
-  const client = new OpenAI({ apiKey: openaiApiKey });
+  const clientBundle = createClient(args);
+  if (!args.mock && !clientBundle) {
+    throw new Error('Missing LLM credentials: set OPENAI_API_KEY or AZURE_OPENAI_API_KEY (or use --mock)');
+  }
 
   const styleGuidePath = args.styleGuidePath || docsMap.style_guide;
-  const styleGuide = styleGuidePath ? await fetchFileFromRepo(octokit, args.docsRepo, styleGuidePath, args.docsBranch) : undefined;
+  const styleGuide = styleGuidePath ? await fetchFileFromRepo(octokit, docsRepo, styleGuidePath, docsBranch) : undefined;
 
-  ensureDir(args.outDir);
+  ensureDir(outDir);
   const collected: { docPath: string; patch: string; matchedFiles: string[] }[] = [];
 
   for (const target of targets) {
-    const docContent = await fetchFileFromRepo(octokit, args.docsRepo, target.docsPath, args.docsBranch);
+    const docContent = await fetchFileFromRepo(octokit, docsRepo, target.docsPath, docsBranch);
     const snippet = extractSection(docContent, target.anchor);
     const combinedDiff = target.matchedFiles.map((f) => fileDiffs.get(f) || '').join('\n');
-    const prompt = buildPrompt({ diff: combinedDiff, docPath: target.docsPath, docContent: snippet, styleGuide });
-    if (args.verbose) console.log(`\nPrompt for ${target.docsPath}:\n${prompt}\n`);
-    const patch = await generatePatch(client, prompt);
-    writeSuggestionFiles(args.outDir, target.docsPath, patch);
+    let patch: string;
+    if (args.mock) {
+      patch = buildMockPatch(target.docsPath);
+    } else {
+      if (!clientBundle) throw new Error('LLM client not initialized');
+      const prompt = buildPrompt({ diff: combinedDiff, docPath: target.docsPath, docContent: snippet, styleGuide });
+      if (args.verbose) console.log(`\nPrompt for ${target.docsPath}:\n${prompt}\n`);
+      patch = await generatePatch(clientBundle!.client, clientBundle!.model, prompt, args.user);
+    }
+    writeSuggestionFiles(outDir, target.docsPath, patch);
     collected.push({ docPath: target.docsPath, patch, matchedFiles: target.matchedFiles });
   }
 
   const summaryMd = buildCommentBody(collected);
-  fs.writeFileSync(path.join(args.outDir, 'suggestions.md'), summaryMd, 'utf8');
-  console.log(`Suggestions written to ${args.outDir}`);
+  fs.writeFileSync(path.join(outDir, 'suggestions.md'), summaryMd, 'utf8');
+  console.log(`Suggestions written to ${outDir}`);
 
   if (args.commentPr && args.codeRepo) {
     const [owner, repo] = args.codeRepo.split('/');
