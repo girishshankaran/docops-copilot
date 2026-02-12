@@ -266,6 +266,7 @@
         <button id="sendRecognitionBtn">Recognition</button>
         <button id="quickPollBtn">Quick Poll</button>
         <button id="shoutOutBtn">Shout Out</button>
+        <button id="callBtn" aria-label="Make a Webex call">📞 Call</button>
       </div>
       <div id="postsContainer"></div>
       <div id="postCreation" style="display: none; margin-top: 1rem;">
@@ -373,6 +374,23 @@
       </div>
     </div>
   </div>
+  <!-- Call Modal -->
+  <div id="callModal" class="modal">
+    <div class="modal-content">
+      <div style="display:flex; align-items:center; justify-content: space-between; margin-bottom: 8px;">
+        <h2 style="margin:0;">Make a Webex Call</h2>
+        <button id="callCloseBtn" class="close-btn" aria-label="Close call form">&times;</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <input id="callCountry" type="text" placeholder="Country code (e.g., +1)" style="width: 100%; padding: 8px;" />
+        <input id="callNumber" type="tel" placeholder="Mobile number" style="width: 100%; padding: 8px;" />
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+          <button id="callCancelBtn" style="background:#888;">Cancel</button>
+          <button id="callStartBtn">Call</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <script>
     // DATA
     const employees = [
@@ -436,6 +454,11 @@
       document.getElementById('shoutModal').classList.add('show');
       document.getElementById('shoutName').focus();
     };
+    document.getElementById('callBtn').onclick = () => {
+      hideForms();
+      document.getElementById('callModal').classList.add('show');
+      document.getElementById('callCountry').focus();
+    };
     // Groups modal logic
     document.getElementById('groupsModalClose').onclick = () => {
       document.getElementById('groupsModal').style.display = 'none';
@@ -454,6 +477,9 @@
       }
       if (e.target === document.getElementById('shoutModal')) {
         closeShout();
+      }
+      if (e.target === document.getElementById('callModal')) {
+        closeCall();
       }
     };
 
@@ -490,6 +516,19 @@
       }
       alert(`Shout out sent to ${name} (${email})${message ? '\\nMessage: ' + message : ''}`);
       closeShout();
+    };
+    // Call form handlers
+    document.getElementById('callCloseBtn').onclick = closeCall;
+    document.getElementById('callCancelBtn').onclick = closeCall;
+    document.getElementById('callStartBtn').onclick = () => {
+      const cc = document.getElementById('callCountry').value.trim();
+      const num = document.getElementById('callNumber').value.trim();
+      if (!cc || !num) {
+        alert('Please enter both country code and mobile number.');
+        return;
+      }
+      alert(`Starting Webex call to ${cc} ${num}...`);
+      closeCall();
     };
 
     function showGroups() {
@@ -647,6 +686,12 @@
       document.getElementById('pollQuestion').value = '';
       document.getElementById('pollOptions').value = '';
       document.getElementById('pollBU').selectedIndex = 0;
+    }
+
+    function closeCall() {
+      document.getElementById('callCountry').value = '';
+      document.getElementById('callNumber').value = '';
+      document.getElementById('callModal').classList.remove('show');
     }
   </script>
 </body>
