@@ -23,8 +23,8 @@ jobs:
           node-version: '20'
       - name: Install deps
         run: |
-          npm install -g ts-node typescript
-          npm install openai @octokit/rest js-yaml minimatch
+          npm ci
+          npm run build
       - name: Capture diff
         run: git diff --unified=3 HEAD^ HEAD > /tmp/diff.patch
       - name: Generate doc suggestions
@@ -37,7 +37,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.DOCS_PAT }}
           DOCS_BRANCH: ${{ vars.DOCS_BRANCH || 'main' }}
         run: |
-          npx ts-node-esm src/index.ts \
+          node dist/index.js \
             --diff /tmp/diff.patch \
             --docs-map docs-map.yaml \
             --docs-repo ${{ vars.DOCS_REPO || 'girishshankaran/docops-copilot-docs' }} \
