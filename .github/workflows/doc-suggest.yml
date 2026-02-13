@@ -29,10 +29,11 @@ jobs:
         run: git diff --unified=3 HEAD^ HEAD > /tmp/diff.patch
       - name: Preflight auth checks
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || secrets.OPENAI_USER_APPKEY }}
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL || vars.OPENAI_BASE_URL || 'https://chat-ai.cisco.com/openai/deployments/gpt-4o-mini' }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4o-mini' }}
           OPENAI_USER: ${{ secrets.OPENAI_USER }}
+          BRIDGE_API_APP_KEY: ${{ secrets.BRIDGE_API_APP_KEY || secrets.OPENAI_USER_APPKEY }}
           OPENAI_USER_APPKEY: ${{ secrets.OPENAI_USER_APPKEY }}
           DOCS_REPO: ${{ vars.DOCS_REPO || 'girishshankaran/docops-copilot-docs' }}
           GITHUB_TOKEN: ${{ secrets.DOCS_PAT }}
@@ -43,8 +44,8 @@ jobs:
             echo "DOCS_PAT is missing."
             exit 1
           fi
-          if [ -z "${OPENAI_API_KEY:-}" ]; then
-            echo "OPENAI_API_KEY (or OPENAI_USER_APPKEY fallback) is missing."
+          if [ -z "${AZURE_OPENAI_API_KEY:-}" ]; then
+            echo "AZURE_OPENAI_API_KEY (or OPENAI_API_KEY fallback) is missing."
             exit 1
           fi
           if [ -z "${OPENAI_BASE_URL:-}" ]; then
@@ -52,11 +53,14 @@ jobs:
             exit 1
           fi
           OPENAI_USER_JSON="${OPENAI_USER:-}"
+          if [ -z "${OPENAI_USER_JSON}" ] && [ -n "${BRIDGE_API_APP_KEY:-}" ]; then
+            OPENAI_USER_JSON="{\"appkey\":\"${BRIDGE_API_APP_KEY}\"}"
+          fi
           if [ -z "${OPENAI_USER_JSON}" ] && [ -n "${OPENAI_USER_APPKEY:-}" ]; then
             OPENAI_USER_JSON="{\"appkey\":\"${OPENAI_USER_APPKEY}\"}"
           fi
           if [ -z "${OPENAI_USER_JSON}" ]; then
-            echo "OPENAI_USER is missing (set OPENAI_USER or OPENAI_USER_APPKEY secret)."
+            echo "OPENAI_USER is missing (set OPENAI_USER or BRIDGE_API_APP_KEY secret)."
             exit 1
           fi
 
@@ -80,8 +84,8 @@ jobs:
             > /tmp/llm_preflight_payload.json
           llm_code=$(curl -sS -o /tmp/llm_auth_check.json -w "%{http_code}" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${OPENAI_API_KEY}" \
-            -H "api-key: ${OPENAI_API_KEY}" \
+            -H "Authorization: Bearer ${AZURE_OPENAI_API_KEY}" \
+            -H "api-key: ${AZURE_OPENAI_API_KEY}" \
             -X POST "${llm_url}" \
             -d @/tmp/llm_preflight_payload.json)
           if [ "${llm_code}" -lt 200 ] || [ "${llm_code}" -ge 300 ]; then
@@ -93,7 +97,8 @@ jobs:
           echo "LLM auth check passed."
       - name: Generate doc suggestions
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || secrets.OPENAI_USER_APPKEY }}
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
+          BRIDGE_API_APP_KEY: ${{ secrets.BRIDGE_API_APP_KEY || secrets.OPENAI_USER_APPKEY }}
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL || vars.OPENAI_BASE_URL || 'https://chat-ai.cisco.com/openai/deployments/gpt-4o-mini' }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4o-mini' }}
           OPENAI_USER: ${{ secrets.OPENAI_USER }}

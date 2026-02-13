@@ -11,7 +11,7 @@ AI-assisted bridge between code changes and Markdown documentation across two Gi
 
 ## Quick start (local dry run)
 1) Copy `docs-map.example.yaml` to `docs-map.yaml` and edit mappings.
-2) Add secrets to `.env` (see `.env.example`). At minimum: `OPENAI_API_KEY`, `GITHUB_TOKEN`, `DOCS_REPO`.
+2) Add secrets to `.env` (see `.env.example`). At minimum: `AZURE_OPENAI_API_KEY`, `BRIDGE_API_APP_KEY`, `GITHUB_TOKEN`, `DOCS_REPO`.
 3) Produce a diff file (example):
    ```bash
    git diff HEAD^ HEAD > /tmp/diff.patch
@@ -51,7 +51,8 @@ jobs:
         run: git diff --unified=3 HEAD^ HEAD > /tmp/diff.patch
       - name: Generate suggestions
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}   # add in repo Secrets
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}   # add in repo Secrets
+          BRIDGE_API_APP_KEY: ${{ secrets.BRIDGE_API_APP_KEY }}       # app key for Cisco Chat-AI user field
           GITHUB_TOKEN: ${{ secrets.DOCS_PAT }}           # PAT with repo scope so action can read docs repo
           DOCS_REPO: girishshankaran/docops-copilot-docs  # or set as repo variable DOCS_REPO
         run: |
@@ -118,8 +119,8 @@ jobs:
   ```
 - Style guide is optional; when present it is fed to the model to preserve tone.
 - LLM config:
-  - Default: OpenAI API, model `gpt-4o-mini`. Optional `OPENAI_BASE_URL`/`OPENAI_MODEL` to point at a compatible endpoint.
-  - Azure OpenAI: set `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, and (optional) `AZURE_OPENAI_API_VERSION`. You can also use flags `--azure`, `--azure-endpoint`, `--azure-deployment`, `--azure-api-version`.
+  - Cisco Chat-AI gateway: set `AZURE_OPENAI_API_KEY` (JWT token), `BRIDGE_API_APP_KEY` (app key used in request `user`), plus `OPENAI_BASE_URL`/`OPENAI_MODEL`.
+  - Optional Azure OpenAI mode: set `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, and (optional) `AZURE_OPENAI_API_VERSION`. You can also use flags `--azure`, `--azure-endpoint`, `--azure-deployment`, `--azure-api-version`.
 
 ## Sample UI asset
 - `ui/home1.html` – static Cisco Social home mock (posts, groups, polls). Open directly in a browser to preview; no build step required.

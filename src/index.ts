@@ -58,6 +58,9 @@ const parseArgs = () => {
   const has = (flag: string) => args.includes(flag);
   const buildGatewayUser = (): string | undefined => {
     if (process.env.OPENAI_USER) return process.env.OPENAI_USER;
+    if (process.env.BRIDGE_API_APP_KEY) {
+      return JSON.stringify({ appkey: process.env.BRIDGE_API_APP_KEY });
+    }
     if (process.env.OPENAI_USER_APPKEY) {
       return JSON.stringify({ appkey: process.env.OPENAI_USER_APPKEY });
     }
@@ -222,7 +225,7 @@ const createClient = (args: ReturnType<typeof parseArgs>) => {
     return { client, model: deployment };
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.AZURE_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
   const model = args.model || 'gpt-4o-mini';
   const client = new OpenAI({
@@ -283,7 +286,7 @@ const main = async () => {
   const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
   const clientBundle = createClient(args);
   if (!args.mock && !clientBundle) {
-    throw new Error('Missing LLM credentials: set OPENAI_API_KEY or AZURE_OPENAI_API_KEY (or use --mock)');
+    throw new Error('Missing LLM credentials: set AZURE_OPENAI_API_KEY (or OPENAI_API_KEY fallback), or use --mock');
   }
 
   const styleGuidePath = args.styleGuidePath || docsMap.style_guide;
