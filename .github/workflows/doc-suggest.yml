@@ -73,12 +73,17 @@ jobs:
           echo "DOCS_PAT access check passed for ${DOCS_REPO}."
 
           llm_url="${OPENAI_BASE_URL%/}/chat/completions"
+          jq -n \
+            --arg model "${OPENAI_MODEL}" \
+            --arg user "${OPENAI_USER_JSON}" \
+            '{model:$model,user:$user,messages:[{role:"user",content:"ping"}],max_tokens:1}' \
+            > /tmp/llm_preflight_payload.json
           llm_code=$(curl -sS -o /tmp/llm_auth_check.json -w "%{http_code}" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${OPENAI_API_KEY}" \
             -H "api-key: ${OPENAI_API_KEY}" \
             -X POST "${llm_url}" \
-            -d "{\"model\":\"${OPENAI_MODEL}\",\"user\":\"${OPENAI_USER_JSON}\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],\"max_tokens\":1}")
+            -d @/tmp/llm_preflight_payload.json)
           if [ "${llm_code}" -lt 200 ] || [ "${llm_code}" -ge 300 ]; then
             echo "LLM auth/preflight failed at ${llm_url}. HTTP ${llm_code}"
             head -c 700 /tmp/llm_auth_check.json || true
