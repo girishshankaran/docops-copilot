@@ -47,7 +47,7 @@ jobs:
           name: doc-suggestions
           path: suggestions
       - name: Auto-apply patches to docs repo
-        if: ${{ env.DOCS_PAT != '' }}
+        if: ${{ secrets.DOCS_PAT != '' }}
         env:
           DOCS_PAT: ${{ secrets.DOCS_PAT }}
           DOCS_REPO: ${{ vars.DOCS_REPO || 'girishshankaran/docops-copilot-docs' }}
