@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOCS_PAT: ${{ secrets.DOCS_PAT }}
+      BRIDGE_OAUTH_BASIC: ${{ secrets.BRIDGE_OAUTH_BASIC || secrets.CISCO_OAUTH_BASIC }}
+      BRIDGE_OAUTH_SCOPE: ${{ vars.BRIDGE_OAUTH_SCOPE || 'customscope' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,9 +29,38 @@ jobs:
           npm run build
       - name: Capture diff
         run: git diff --unified=3 HEAD^ HEAD > /tmp/diff.patch
+      - name: Mint Cisco Chat-AI access token
+        env:
+          AZURE_OPENAI_API_KEY_STATIC: ${{ secrets.AZURE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "${BRIDGE_OAUTH_BASIC:-}" ]; then
+            token_json=$(curl -sS -X POST "https://id.cisco.com/oauth2/default/v1/token" \
+              -H "Authorization: Basic ${BRIDGE_OAUTH_BASIC}" \
+              -H "Content-Type: application/x-www-form-urlencoded" \
+              --data "grant_type=client_credentials&scope=${BRIDGE_OAUTH_SCOPE}")
+            access_token=$(echo "${token_json}" | jq -r '.access_token // empty')
+            expires_in=$(echo "${token_json}" | jq -r '.expires_in // empty')
+            if [ -z "${access_token}" ]; then
+              echo "Failed to mint Cisco access token."
+              echo "${token_json}" | head -c 700
+              echo
+              exit 1
+            fi
+            echo "::add-mask::${access_token}"
+            echo "AZURE_OPENAI_API_KEY=${access_token}" >> "$GITHUB_ENV"
+            echo "OPENAI_API_KEY=${access_token}" >> "$GITHUB_ENV"
+            echo "Minted Cisco Chat-AI token (expires_in=${expires_in}s)."
+          elif [ -n "${AZURE_OPENAI_API_KEY_STATIC:-}" ]; then
+            echo "Using static AZURE_OPENAI_API_KEY/OPENAI_API_KEY secret fallback."
+          else
+            echo "No OAuth basic secret (BRIDGE_OAUTH_BASIC/CISCO_OAUTH_BASIC) and no static API key secret found."
+            exit 1
+          fi
       - name: Preflight auth checks
         env:
-          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
+          AZURE_OPENAI_API_KEY_STATIC: ${{ secrets.AZURE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL || vars.OPENAI_BASE_URL || 'https://chat-ai.cisco.com/openai/deployments/gpt-4o-mini' }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4o-mini' }}
           OPENAI_USER: ${{ secrets.OPENAI_USER }}
@@ -39,6 +70,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.DOCS_PAT }}
         run: |
           set -euo pipefail
+
+          if [ -z "${AZURE_OPENAI_API_KEY:-}" ] && [ -n "${AZURE_OPENAI_API_KEY_STATIC:-}" ]; then
+            AZURE_OPENAI_API_KEY="${AZURE_OPENAI_API_KEY_STATIC}"
+          fi
 
           if [ -z "${GITHUB_TOKEN:-}" ]; then
             echo "DOCS_PAT is missing."
@@ -97,7 +132,7 @@ jobs:
           echo "LLM auth check passed."
       - name: Generate doc suggestions
         env:
-          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
+          AZURE_OPENAI_API_KEY_STATIC: ${{ secrets.AZURE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
           BRIDGE_API_APP_KEY: ${{ secrets.BRIDGE_API_APP_KEY || secrets.OPENAI_USER_APPKEY }}
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL || vars.OPENAI_BASE_URL || 'https://chat-ai.cisco.com/openai/deployments/gpt-4o-mini' }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4o-mini' }}
@@ -107,6 +142,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.DOCS_PAT }}
           DOCS_BRANCH: ${{ vars.DOCS_BRANCH || 'main' }}
         run: |
+          if [ -z "${AZURE_OPENAI_API_KEY:-}" ] && [ -n "${AZURE_OPENAI_API_KEY_STATIC:-}" ]; then
+            export AZURE_OPENAI_API_KEY="${AZURE_OPENAI_API_KEY_STATIC}"
+          fi
           node dist/index.js \
             --diff /tmp/diff.patch \
             --docs-map docs-map.yaml \

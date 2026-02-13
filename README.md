@@ -11,7 +11,7 @@ AI-assisted bridge between code changes and Markdown documentation across two Gi
 
 ## Quick start (local dry run)
 1) Copy `docs-map.example.yaml` to `docs-map.yaml` and edit mappings.
-2) Add secrets to `.env` (see `.env.example`). At minimum: `AZURE_OPENAI_API_KEY`, `BRIDGE_API_APP_KEY`, `GITHUB_TOKEN`, `DOCS_REPO`.
+2) Add secrets to `.env` (see `.env.example`). At minimum: `BRIDGE_API_APP_KEY`, `GITHUB_TOKEN`, `DOCS_REPO`.
 3) Produce a diff file (example):
    ```bash
    git diff HEAD^ HEAD > /tmp/diff.patch
@@ -51,7 +51,7 @@ jobs:
         run: git diff --unified=3 HEAD^ HEAD > /tmp/diff.patch
       - name: Generate suggestions
         env:
-          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}   # add in repo Secrets
+          BRIDGE_OAUTH_BASIC: ${{ secrets.BRIDGE_OAUTH_BASIC }}       # OAuth client credentials (base64 client_id:client_secret)
           BRIDGE_API_APP_KEY: ${{ secrets.BRIDGE_API_APP_KEY }}       # app key for Cisco Chat-AI user field
           GITHUB_TOKEN: ${{ secrets.DOCS_PAT }}           # PAT with repo scope so action can read docs repo
           DOCS_REPO: girishshankaran/docops-copilot-docs  # or set as repo variable DOCS_REPO
@@ -119,7 +119,8 @@ jobs:
   ```
 - Style guide is optional; when present it is fed to the model to preserve tone.
 - LLM config:
-  - Cisco Chat-AI gateway: set `AZURE_OPENAI_API_KEY` (JWT token), `BRIDGE_API_APP_KEY` (app key used in request `user`), plus `OPENAI_BASE_URL`/`OPENAI_MODEL`.
+  - Cisco Chat-AI gateway (recommended): set `BRIDGE_OAUTH_BASIC` (used to mint fresh short-lived JWT per run) and `BRIDGE_API_APP_KEY` (app key used in request `user`), plus `OPENAI_BASE_URL`/`OPENAI_MODEL`.
+  - Fallback static token mode: set `AZURE_OPENAI_API_KEY` (or `OPENAI_API_KEY`) if you cannot mint tokens in workflow.
   - Optional Azure OpenAI mode: set `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, and (optional) `AZURE_OPENAI_API_VERSION`. You can also use flags `--azure`, `--azure-endpoint`, `--azure-deployment`, `--azure-api-version`.
 
 ## Sample UI asset
