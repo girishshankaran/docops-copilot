@@ -358,6 +358,11 @@
       font-size: 0.9rem;
       font-weight: 600;
     }
+    .photo-preview-wrap.dragover {
+      border-color: var(--brand);
+      background: #eaf5ff;
+      color: var(--brand);
+    }
     .photo-preview {
       max-width: 100%;
       max-height: 260px;
@@ -459,7 +464,7 @@
         <input id="photoTitle" class="content-input" type="text" placeholder="Photo title" />
         <textarea id="photoCaption" class="content-input" placeholder="Add a caption (optional)" style="height: 90px"></textarea>
         <input id="photoFile" class="content-input" type="file" accept="image/*" />
-        <div id="photoPreviewWrap" class="photo-preview-wrap">No photo selected</div>
+        <div id="photoPreviewWrap" class="photo-preview-wrap">No photo selected. Drag and drop an image here.</div>
         <select id="photoBU" multiple class="content-input">
           <option value="All">All</option>
           <option value="Marketing">Marketing</option>
@@ -864,7 +869,7 @@
       document.getElementById('photoCaption').value = '';
       document.getElementById('photoFile').value = '';
       document.getElementById('photoBU').selectedIndex = 0;
-      document.getElementById('photoPreviewWrap').innerHTML = 'No photo selected';
+      document.getElementById('photoPreviewWrap').innerHTML = 'No photo selected. Drag and drop an image here.';
     }
 
     function closeCall() {
@@ -955,22 +960,51 @@
 
     document.getElementById('photoFile').addEventListener('change', (e) => {
       const [file] = e.target.files || [];
+      setPhotoFile(file);
+    });
+
+    function setPhotoFile(file) {
       const previewWrap = document.getElementById('photoPreviewWrap');
+      const photoInput = document.getElementById('photoFile');
       if (!file) {
-        previewWrap.textContent = 'No photo selected';
-        return;
+        previewWrap.textContent = 'No photo selected. Drag and drop an image here.';
+        return false;
       }
       if (!file.type.startsWith('image/')) {
         showToast('Please select an image file.');
-        e.target.value = '';
-        previewWrap.textContent = 'No photo selected';
-        return;
+        photoInput.value = '';
+        previewWrap.textContent = 'No photo selected. Drag and drop an image here.';
+        return false;
       }
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      photoInput.files = dt.files;
       const reader = new FileReader();
       reader.onload = () => {
         previewWrap.innerHTML = `<img class="photo-preview" src="${sanitize(reader.result)}" alt="Photo preview" />`;
       };
       reader.readAsDataURL(file);
+      return true;
+    }
+
+    const photoPreviewWrap = document.getElementById('photoPreviewWrap');
+    ['dragenter', 'dragover'].forEach((evt) => {
+      photoPreviewWrap.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        photoPreviewWrap.classList.add('dragover');
+      });
+    });
+    ['dragleave', 'drop'].forEach((evt) => {
+      photoPreviewWrap.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        photoPreviewWrap.classList.remove('dragover');
+      });
+    });
+    photoPreviewWrap.addEventListener('drop', (e) => {
+      const [file] = e.dataTransfer.files || [];
+      setPhotoFile(file);
     });
 
     document.addEventListener('keydown', (e) => {
