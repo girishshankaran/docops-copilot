@@ -11,6 +11,8 @@ permissions:
 jobs:
   suggest:
     runs-on: ubuntu-latest
+    env:
+      DOCS_PAT: ${{ secrets.DOCS_PAT }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -47,9 +49,8 @@ jobs:
           name: doc-suggestions
           path: suggestions
       - name: Auto-apply patches to docs repo
-        if: ${{ secrets.DOCS_PAT != '' }}
+        if: ${{ env.DOCS_PAT != '' }}
         env:
-          DOCS_PAT: ${{ secrets.DOCS_PAT }}
           DOCS_REPO: ${{ vars.DOCS_REPO || 'girishshankaran/docops-copilot-docs' }}
           DOCS_BRANCH: ${{ vars.DOCS_BRANCH || 'main' }}
           GITHUB_WORKSPACE: ${{ github.workspace }}
