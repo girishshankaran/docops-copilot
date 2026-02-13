@@ -269,6 +269,19 @@
       position: relative;
       user-select: none;
     }
+    .video-preview-box {
+      border: 1px solid #c7d4e2;
+      border-radius: 10px;
+      background: #f7fbff;
+      padding: 10px;
+      color: #27415d;
+      font-size: 0.92rem;
+    }
+    .video-preview-state {
+      margin-top: 6px;
+      color: #46698d;
+      font-weight: 600;
+    }
     .close-btn {
       position: static;
       font-size: 22px;
@@ -420,6 +433,7 @@
         <button id="photoUploadBtn">Upload Photo</button>
         <button id="quickPollBtn">Quick Poll</button>
         <button id="callBtn" aria-label="Make a Webex call">📞 Call</button>
+        <button id="videoCallBtn" aria-label="Start a Webex video call">🎥 Video Call</button>
       </div>
       <div class="feed-tools">
         <p id="feedStatus" class="feed-status">Showing all feed items</p>
@@ -553,6 +567,35 @@
       </div>
     </div>
   </div>
+  <!-- Video Call Modal -->
+  <div id="videoCallModal" class="modal">
+    <div class="modal-content">
+      <div style="display:flex; align-items:center; justify-content: space-between; margin-bottom: 8px;">
+        <h2 style="margin:0;">Start a Video Call</h2>
+        <button id="videoCallCloseBtn" class="close-btn" aria-label="Close video call form">&times;</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <input id="videoTopic" type="text" placeholder="Meeting topic" style="width: 100%; padding: 8px;" />
+        <input id="videoParticipant" type="email" placeholder="Participant email" style="width: 100%; padding: 8px;" />
+        <label style="display:flex; align-items:center; gap:8px;">
+          <input id="videoCameraToggle" type="checkbox" checked />
+          Camera on at start
+        </label>
+        <label style="display:flex; align-items:center; gap:8px;">
+          <input id="videoMicToggle" type="checkbox" checked />
+          Microphone on at start
+        </label>
+        <div class="video-preview-box">
+          <div><strong>Preview:</strong> You are ready to join as <span id="videoPreviewName">Host</span></div>
+          <div id="videoPreviewState" class="video-preview-state">Camera: On | Mic: On</div>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+          <button id="videoCallCancelBtn" style="background:#888;">Cancel</button>
+          <button id="videoCallStartBtn">Start Video Call</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <script>
     // DATA
     const employees = [
@@ -594,6 +637,7 @@
     const groupCreationForm = document.getElementById('groupCreationForm');
     const groupsContainer = document.getElementById('groupsContainer');
     const callModal = document.getElementById('callModal');
+    const videoCallModal = document.getElementById('videoCallModal');
     const feedStatus = document.getElementById('feedStatus');
     const feedCount = document.getElementById('feedCount');
 
@@ -605,6 +649,7 @@
       groupCreationForm.style.display = 'none';
       groupsContainer.innerHTML = '';
       closeCall();
+      closeVideoCall();
     }
 
     // Toolbar event listeners
@@ -634,6 +679,12 @@
       callModal.classList.add('show');
       document.getElementById('callCountry').focus();
     };
+    document.getElementById('videoCallBtn').onclick = () => {
+      hideForms();
+      videoCallModal.classList.add('show');
+      document.getElementById('videoTopic').focus();
+      updateVideoPreview();
+    };
     // Groups modal logic
     document.getElementById('groupsModalClose').onclick = () => {
       groupsModal.style.display = 'none';
@@ -652,6 +703,9 @@
       }
       if (e.target === callModal) {
         closeCall();
+      }
+      if (e.target === videoCallModal) {
+        closeVideoCall();
       }
     };
 
@@ -692,6 +746,30 @@
       }
       showToast(`Starting Webex call to ${cc} ${num}...`);
       closeCall();
+    };
+    // Video Call handlers
+    document.getElementById('videoCallCloseBtn').onclick = closeVideoCall;
+    document.getElementById('videoCallCancelBtn').onclick = closeVideoCall;
+    document.getElementById('videoCameraToggle').onchange = updateVideoPreview;
+    document.getElementById('videoMicToggle').onchange = updateVideoPreview;
+    document.getElementById('videoTopic').oninput = updateVideoPreview;
+    document.getElementById('videoCallStartBtn').onclick = () => {
+      const topic = document.getElementById('videoTopic').value.trim();
+      const participant = document.getElementById('videoParticipant').value.trim();
+      if (!topic || !participant) {
+        showToast('Please enter a meeting topic and participant email.');
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(participant)) {
+        showToast('Enter a valid participant email.');
+        return;
+      }
+      const cameraOn = document.getElementById('videoCameraToggle').checked;
+      const micOn = document.getElementById('videoMicToggle').checked;
+      const webexUrl = `https://cisco.webex.com/meet/gisankar?topic=${encodeURIComponent(topic)}&cam=${cameraOn ? 'on' : 'off'}&mic=${micOn ? 'on' : 'off'}`;
+      window.open(webexUrl, '_blank');
+      showToast(`Video call started for "${topic}" with ${participant}.`);
+      closeVideoCall();
     };
 
     function showGroups() {
@@ -878,6 +956,23 @@
       callModal.classList.remove('show');
     }
 
+    function updateVideoPreview() {
+      const topic = document.getElementById('videoTopic').value.trim();
+      const cameraOn = document.getElementById('videoCameraToggle').checked;
+      const micOn = document.getElementById('videoMicToggle').checked;
+      document.getElementById('videoPreviewName').textContent = topic || 'Host';
+      document.getElementById('videoPreviewState').textContent = `Camera: ${cameraOn ? 'On' : 'Off'} | Mic: ${micOn ? 'On' : 'Off'}`;
+    }
+
+    function closeVideoCall() {
+      document.getElementById('videoTopic').value = '';
+      document.getElementById('videoParticipant').value = '';
+      document.getElementById('videoCameraToggle').checked = true;
+      document.getElementById('videoMicToggle').checked = true;
+      updateVideoPreview();
+      videoCallModal.classList.remove('show');
+    }
+
     function getSelectedValues(selectId) {
       const options = Array.from(document.getElementById(selectId).selectedOptions).map(o => o.value);
       return options.length ? options : ['All'];
@@ -1011,6 +1106,7 @@
       if (e.key === 'Escape') {
         groupsModal.style.display = 'none';
         closeCall();
+        closeVideoCall();
         groupCreationForm.style.display = 'none';
       }
     });
