@@ -27,6 +27,55 @@ jobs:
           npm run build
       - name: Capture diff
         run: git diff --unified=3 HEAD^ HEAD > /tmp/diff.patch
+      - name: Preflight auth checks
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || secrets.OPENAI_USER_APPKEY }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL || vars.OPENAI_BASE_URL || 'https://chat-ai.cisco.com/openai/deployments/gpt-4o-mini' }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4o-mini' }}
+          DOCS_REPO: ${{ vars.DOCS_REPO || 'girishshankaran/docops-copilot-docs' }}
+          GITHUB_TOKEN: ${{ secrets.DOCS_PAT }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${GITHUB_TOKEN:-}" ]; then
+            echo "DOCS_PAT is missing."
+            exit 1
+          fi
+          if [ -z "${OPENAI_API_KEY:-}" ]; then
+            echo "OPENAI_API_KEY (or OPENAI_USER_APPKEY fallback) is missing."
+            exit 1
+          fi
+          if [ -z "${OPENAI_BASE_URL:-}" ]; then
+            echo "OPENAI_BASE_URL is missing."
+            exit 1
+          fi
+
+          gh_code=$(curl -sS -o /tmp/docs_auth_check.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${DOCS_REPO}")
+          if [ "${gh_code}" -lt 200 ] || [ "${gh_code}" -ge 300 ]; then
+            echo "DOCS_PAT cannot access ${DOCS_REPO}. HTTP ${gh_code}"
+            head -c 500 /tmp/docs_auth_check.json || true
+            echo
+            exit 1
+          fi
+          echo "DOCS_PAT access check passed for ${DOCS_REPO}."
+
+          llm_url="${OPENAI_BASE_URL%/}/chat/completions"
+          llm_code=$(curl -sS -o /tmp/llm_auth_check.json -w "%{http_code}" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${OPENAI_API_KEY}" \
+            -H "api-key: ${OPENAI_API_KEY}" \
+            -X POST "${llm_url}" \
+            -d "{\"model\":\"${OPENAI_MODEL}\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],\"max_tokens\":1}")
+          if [ "${llm_code}" -lt 200 ] || [ "${llm_code}" -ge 300 ]; then
+            echo "LLM auth/preflight failed at ${llm_url}. HTTP ${llm_code}"
+            head -c 700 /tmp/llm_auth_check.json || true
+            echo
+            exit 1
+          fi
+          echo "LLM auth check passed."
       - name: Generate doc suggestions
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || secrets.OPENAI_USER_APPKEY }}
