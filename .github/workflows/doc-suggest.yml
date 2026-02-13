@@ -27,8 +27,8 @@ jobs:
         run: git diff --unified=3 HEAD^ HEAD > /tmp/diff.patch
       - name: Generate doc suggestions
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || secrets.OPENAI_USER_APPKEY }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL || vars.OPENAI_BASE_URL || 'https://chat-ai.cisco.com/openai/deployments/gpt-4o-mini' }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4o-mini' }}
           OPENAI_USER: ${{ secrets.OPENAI_USER }}
           # Personal access token with repo scope so we can read the docs repo
