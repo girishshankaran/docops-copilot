@@ -56,6 +56,13 @@ const parseArgs = () => {
     return fallback;
   };
   const has = (flag: string) => args.includes(flag);
+  const buildGatewayUser = (): string | undefined => {
+    if (process.env.OPENAI_USER) return process.env.OPENAI_USER;
+    if (process.env.OPENAI_USER_APPKEY) {
+      return JSON.stringify({ appkey: process.env.OPENAI_USER_APPKEY });
+    }
+    return undefined;
+  };
   return {
     diffPath: get('--diff'),
     docsMapPath: get('--docs-map', 'docs-map.yaml'),
@@ -71,7 +78,7 @@ const parseArgs = () => {
     azureEndpoint: get('--azure-endpoint', process.env.AZURE_OPENAI_ENDPOINT),
     azureDeployment: get('--azure-deployment', process.env.AZURE_OPENAI_DEPLOYMENT),
     azureApiVersion: get('--azure-api-version', process.env.AZURE_OPENAI_API_VERSION || '2024-10-01-preview'),
-    user: get('--user', process.env.OPENAI_USER),
+    user: get('--user', buildGatewayUser()),
     verbose: has('--verbose'),
     mock: has('--mock'),
   };

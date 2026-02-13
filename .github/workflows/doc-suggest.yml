@@ -32,7 +32,8 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || secrets.OPENAI_USER_APPKEY }}
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL || vars.OPENAI_BASE_URL || 'https://chat-ai.cisco.com/openai/deployments/gpt-4o-mini' }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4o-mini' }}
-          OPENAI_USER: ${{ secrets.OPENAI_USER || secrets.OPENAI_USER_APPKEY }}
+          OPENAI_USER: ${{ secrets.OPENAI_USER }}
+          OPENAI_USER_APPKEY: ${{ secrets.OPENAI_USER_APPKEY }}
           DOCS_REPO: ${{ vars.DOCS_REPO || 'girishshankaran/docops-copilot-docs' }}
           GITHUB_TOKEN: ${{ secrets.DOCS_PAT }}
         run: |
@@ -50,7 +51,11 @@ jobs:
             echo "OPENAI_BASE_URL is missing."
             exit 1
           fi
-          if [ -z "${OPENAI_USER:-}" ]; then
+          OPENAI_USER_JSON="${OPENAI_USER:-}"
+          if [ -z "${OPENAI_USER_JSON}" ] && [ -n "${OPENAI_USER_APPKEY:-}" ]; then
+            OPENAI_USER_JSON="{\"appkey\":\"${OPENAI_USER_APPKEY}\"}"
+          fi
+          if [ -z "${OPENAI_USER_JSON}" ]; then
             echo "OPENAI_USER is missing (set OPENAI_USER or OPENAI_USER_APPKEY secret)."
             exit 1
           fi
@@ -73,7 +78,7 @@ jobs:
             -H "Authorization: Bearer ${OPENAI_API_KEY}" \
             -H "api-key: ${OPENAI_API_KEY}" \
             -X POST "${llm_url}" \
-            -d "{\"model\":\"${OPENAI_MODEL}\",\"user\":\"${OPENAI_USER}\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],\"max_tokens\":1}")
+            -d "{\"model\":\"${OPENAI_MODEL}\",\"user\":\"${OPENAI_USER_JSON}\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],\"max_tokens\":1}")
           if [ "${llm_code}" -lt 200 ] || [ "${llm_code}" -ge 300 ]; then
             echo "LLM auth/preflight failed at ${llm_url}. HTTP ${llm_code}"
             head -c 700 /tmp/llm_auth_check.json || true
@@ -86,7 +91,8 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || secrets.OPENAI_USER_APPKEY }}
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL || vars.OPENAI_BASE_URL || 'https://chat-ai.cisco.com/openai/deployments/gpt-4o-mini' }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4o-mini' }}
-          OPENAI_USER: ${{ secrets.OPENAI_USER || secrets.OPENAI_USER_APPKEY }}
+          OPENAI_USER: ${{ secrets.OPENAI_USER }}
+          OPENAI_USER_APPKEY: ${{ secrets.OPENAI_USER_APPKEY }}
           # Personal access token with repo scope so we can read the docs repo
           GITHUB_TOKEN: ${{ secrets.DOCS_PAT }}
           DOCS_BRANCH: ${{ vars.DOCS_BRANCH || 'main' }}
