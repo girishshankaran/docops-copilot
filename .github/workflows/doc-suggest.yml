@@ -2,7 +2,10 @@ name: Doc Suggestions
 
 on:
   push:
-    branches: [main]
+    branches: [main, copilot]
+  pull_request:
+    branches: [main, copilot]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -28,7 +31,15 @@ jobs:
           npm ci
           npm run build
       - name: Capture diff
-        run: git diff --unified=3 HEAD^ HEAD > /tmp/diff.patch
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base_ref="${{ github.base_ref }}"
+            git fetch --depth=1 origin "${base_ref}"
+            git diff --unified=3 "origin/${base_ref}...HEAD" > /tmp/diff.patch
+          else
+            git diff --unified=3 HEAD^ HEAD > /tmp/diff.patch
+          fi
       - name: Mint Cisco Chat-AI access token
         env:
           AZURE_OPENAI_API_KEY_STATIC: ${{ secrets.AZURE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}

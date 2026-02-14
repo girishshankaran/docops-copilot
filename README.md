@@ -3,7 +3,7 @@
 AI-assisted bridge between code changes and Markdown documentation across two GitHub repos (code + docs).
 
 ## What it does
-- Watches code merges (push to `main`) and reads the git diff.
+- Watches code changes on `main`/`copilot` pushes and PRs targeting `main`/`copilot`, then reads the git diff.
 - Maps changed files to relevant docs via `docs-map.yaml` globs.
 - For each target doc, fetches the current Markdown from the docs repo, feeds the code diff + doc snippet + style guide to an LLM, and returns a unified patch.
 - Writes patches to `suggestions/` and can optionally post them as a PR comment in the code repo.
@@ -27,14 +27,24 @@ AI-assisted bridge between code changes and Markdown documentation across two Gi
    ```
    Patches land in `suggestions/` and `suggestions.md` holds a ready-to-post comment.
 
+## Local preflight (recommended before reruns)
+Validate the same auth path used by GitHub Actions:
+```bash
+scripts/preflight-doc-suggest.sh
+```
+It checks token minting (or static token fallback), docs repo token access, and Chat-AI auth.
+
 ## GitHub Actions wiring
 ### In the code repo (`.github/workflows/doc-suggest.yml`)
-Triggered on merge to `main`; generates doc suggestions and comments on the originating PR.
+Triggered on pushes to `main`/`copilot`, PRs to `main`/`copilot`, or manual dispatch.
 ```yaml
 name: Doc Suggestions
 on:
   push:
-    branches: [main]
+    branches: [main, copilot]
+  pull_request:
+    branches: [main, copilot]
+  workflow_dispatch:
 
 jobs:
   suggest-docs:
