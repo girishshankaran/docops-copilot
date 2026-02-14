@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { execSync } from 'child_process';
+import { execSync, spawnSync } from 'child_process';
 import yaml from 'js-yaml';
 import { Octokit } from '@octokit/rest';
 import { minimatch } from 'minimatch';
@@ -203,6 +203,27 @@ const buildStrictPatchPrompt = (params: {
   ].join('\n');
 };
 
+const buildFullDocPrompt = (params: {
+  diff: string;
+  docPath: string;
+  docContent: string;
+  styleGuide?: string;
+}): string => {
+  const { diff, docPath, docContent, styleGuide } = params;
+  const guideBlock = styleGuide ? `Style guide (respect tone, voice, formatting):\n${styleGuide}\n` : '';
+  return [
+    'You are an expert technical writer. Update the Markdown documentation based on the provided code diff.',
+    guideBlock,
+    `Target doc: ${docPath}`,
+    'Code diff:',
+    diff,
+    'Current doc content:',
+    docContent,
+    'Return the COMPLETE updated Markdown document content only.',
+    'Do not include code fences.',
+  ].filter(Boolean).join('\n\n');
+};
+
 const generatePatch = async (
   client: OpenAI | AzureOpenAI,
   model: string,
@@ -224,6 +245,29 @@ const generatePatch = async (
   const text = (completion as any).choices[0]?.message?.content || '';
   const match = text.match(/```patch\n([\s\S]*?)```/);
   return match ? match[1].trim() : text.trim();
+};
+
+const generateUpdatedDoc = async (
+  client: OpenAI | AzureOpenAI,
+  model: string,
+  prompt: string,
+  user?: string,
+): Promise<string> => {
+  const completion = await client.chat.completions.create({
+    model,
+    temperature: 0.2,
+    messages: [
+      { role: 'system', content: 'You rewrite full Markdown documents based on code diffs.' },
+      { role: 'user', content: prompt },
+    ],
+    ...(user ? { user } : {}),
+  });
+  if (!completion || !Array.isArray((completion as any).choices) || (completion as any).choices.length === 0) {
+    throw new Error(`LLM response missing choices: ${JSON.stringify(completion)}`);
+  }
+  const text = (completion as any).choices[0]?.message?.content || '';
+  const fenced = text.match(/```(?:markdown|md)?\n([\s\S]*?)```/i);
+  return (fenced ? fenced[1] : text).trim();
 };
 
 const ensureDir = (p: string) => {
@@ -317,6 +361,29 @@ const normalizePatch = (docPath: string, docContent: string, patch: string): str
   throw new Error(`Generated patch for ${docPath} is invalid/corrupt`);
 };
 
+const buildPatchFromContent = (docPath: string, oldContent: string, newContent: string): string | undefined => {
+  if (oldContent === newContent) return undefined;
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'docops-content-diff-'));
+  try {
+    const oldPath = path.join(tmpRoot, 'old.md');
+    const newPath = path.join(tmpRoot, 'new.md');
+    fs.writeFileSync(oldPath, oldContent, 'utf8');
+    fs.writeFileSync(newPath, newContent, 'utf8');
+    const res = spawnSync(
+      'git',
+      ['diff', '--no-index', '--unified=3', '--label', `a/${docPath}`, '--label', `b/${docPath}`, oldPath, newPath],
+      { encoding: 'utf8' },
+    );
+    if (res.status !== 0 && res.status !== 1) {
+      throw new Error(res.stderr?.trim() || `git diff failed with status ${res.status}`);
+    }
+    const patch = (res.stdout || '').trim();
+    return patch || undefined;
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+};
+
 const buildMockPatch = (docPath: string): string =>
   [
     `diff --git a/${docPath} b/${docPath}`,
@@ -342,9 +409,10 @@ const buildCommentBody = (items: { docPath: string; patch: string; matchedFiles:
 interface TargetRunReport {
   docPath: string;
   matchedFiles: string[];
-  status: 'generated' | 'skipped_invalid_patch' | 'fetch_failed';
+  status: 'generated' | 'skipped_invalid_patch' | 'fetch_failed' | 'skipped_no_change';
   reason?: string;
   strictRetry?: boolean;
+  contentFallback?: boolean;
 }
 
 const main = async () => {
@@ -412,6 +480,7 @@ const main = async () => {
     const combinedDiff = target.matchedFiles.map((f) => fileDiffs.get(f) || '').join('\n');
     let patch: string;
     let strictRetry = false;
+    let contentFallback = false;
     if (args.mock) {
       patch = buildMockPatch(target.docsPath);
     } else {
@@ -437,16 +506,55 @@ const main = async () => {
     }
     try {
       patch = normalizePatch(target.docsPath, docContent, patch);
-    } catch (e) {
-      console.warn(`Skipping ${target.docsPath}: ${(e as Error).message}`);
-      runReport.targets.push({
-        docPath: target.docsPath,
-        matchedFiles: target.matchedFiles,
-        status: 'skipped_invalid_patch',
-        reason: (e as Error).message,
-        strictRetry,
-      });
-      continue;
+    } catch (primaryErr) {
+      if (args.mock) {
+        console.warn(`Skipping ${target.docsPath}: ${(primaryErr as Error).message}`);
+        runReport.targets.push({
+          docPath: target.docsPath,
+          matchedFiles: target.matchedFiles,
+          status: 'skipped_invalid_patch',
+          reason: (primaryErr as Error).message,
+          strictRetry,
+          contentFallback,
+        });
+        continue;
+      }
+      try {
+        contentFallback = true;
+        const fullDocPrompt = buildFullDocPrompt({
+          diff: combinedDiff,
+          docPath: target.docsPath,
+          docContent,
+          styleGuide,
+        });
+        const updatedDoc = await generateUpdatedDoc(clientBundle!.client, clientBundle!.model, fullDocPrompt, args.user);
+        const contentPatch = buildPatchFromContent(target.docsPath, docContent, updatedDoc);
+        if (!contentPatch) {
+          runReport.targets.push({
+            docPath: target.docsPath,
+            matchedFiles: target.matchedFiles,
+            status: 'skipped_no_change',
+            reason: 'Full-content fallback produced no content changes.',
+            strictRetry,
+            contentFallback,
+          });
+          console.log(`No doc changes for ${target.docsPath} after full-content fallback.`);
+          continue;
+        }
+        patch = normalizePatch(target.docsPath, docContent, contentPatch);
+      } catch (fallbackErr) {
+        const reason = `${(primaryErr as Error).message}; fallback failed: ${(fallbackErr as Error).message}`;
+        console.warn(`Skipping ${target.docsPath}: ${reason}`);
+        runReport.targets.push({
+          docPath: target.docsPath,
+          matchedFiles: target.matchedFiles,
+          status: 'skipped_invalid_patch',
+          reason,
+          strictRetry,
+          contentFallback,
+        });
+        continue;
+      }
     }
     writeSuggestionFiles(outDir, target.docsPath, patch);
     collected.push({ docPath: target.docsPath, patch, matchedFiles: target.matchedFiles });
@@ -455,6 +563,7 @@ const main = async () => {
       matchedFiles: target.matchedFiles,
       status: 'generated',
       strictRetry,
+      contentFallback,
     });
   }
   runReport.generatedPatchCount = collected.length;
