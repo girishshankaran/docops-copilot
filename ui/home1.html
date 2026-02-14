@@ -477,6 +477,7 @@
         <button id="callBtn" aria-label="Make a Webex call">📞 Call</button>
         <button id="videoCallBtn" aria-label="Start a Webex video call">🎥 Video Call</button>
         <button id="focusModeBtn" aria-label="Toggle focus mode">Focus Mode: Off</button>
+        <button id="feedDigestBtn" aria-label="Summarize feed activity">Feed Digest</button>
       </div>
       <div class="feed-tools">
         <p id="feedStatus" class="feed-status">Showing all feed items</p>
@@ -698,6 +699,7 @@
     const videoJoinBtn = document.getElementById('videoJoinBtn');
     const videoEndBtn = document.getElementById('videoEndBtn');
     const focusModeBtn = document.getElementById('focusModeBtn');
+    const feedDigestBtn = document.getElementById('feedDigestBtn');
     let activeVideoCallUrl = '';
     let isFocusMode = false;
 
@@ -760,6 +762,11 @@
       document.body.classList.toggle('focus-mode', isFocusMode);
       focusModeBtn.textContent = `Focus Mode: ${isFocusMode ? 'On' : 'Off'}`;
       showToast(isFocusMode ? 'Focus Mode enabled.' : 'Focus Mode disabled.');
+    };
+    feedDigestBtn.onclick = () => {
+      const postCount = posts.filter(p => p.type === 'post').length;
+      const pollCount = posts.filter(p => p.type === 'poll').length;
+      showToast(`Digest: ${postCount} posts and ${pollCount} polls in your feed.`);
     };
     // Groups modal logic
     document.getElementById('groupsModalClose').onclick = () => {
