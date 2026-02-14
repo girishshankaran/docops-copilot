@@ -422,6 +422,17 @@ interface TargetRunReport {
   contentFallback?: boolean;
 }
 
+interface TargetDebugReport {
+  docPath: string;
+  matchedFiles: string[];
+  combinedDiffChars: number;
+  combinedDiffPreview: string;
+  snippetChars?: number;
+  promptChars?: number;
+  strictPromptChars?: number;
+  fullDocPromptChars?: number;
+}
+
 const main = async () => {
   const args = parseArgs();
   if (!args.docsRepo) throw new Error('docs repo is required (--docs-repo or DOCS_REPO env)');
@@ -450,10 +461,24 @@ const main = async () => {
     generatedPatchCount: 0,
     targets: [],
   };
+  const debugReport: {
+    generatedAt: string;
+    model: string;
+    changedFiles: string[];
+    targetCount: number;
+    targets: TargetDebugReport[];
+  } = {
+    generatedAt: new Date().toISOString(),
+    model: args.model || 'gpt-4o-mini',
+    changedFiles,
+    targetCount: targets.length,
+    targets: [],
+  };
   if (targets.length === 0) {
     console.log('No matching docs for changed files.');
     runReport.note = 'No docs-map targets matched changed files.';
     fs.writeFileSync(path.join(outDir, 'run-report.json'), JSON.stringify(runReport, null, 2), 'utf8');
+    fs.writeFileSync(path.join(outDir, 'llm-input-debug.json'), JSON.stringify(debugReport, null, 2), 'utf8');
     fs.writeFileSync(path.join(outDir, 'suggestions.md'), 'No matching docs for changed files.\n', 'utf8');
     return;
   }
@@ -470,10 +495,17 @@ const main = async () => {
   const collected: { docPath: string; patch: string; matchedFiles: string[] }[] = [];
 
   for (const target of targets) {
+    const targetDebug: TargetDebugReport = {
+      docPath: target.docsPath,
+      matchedFiles: target.matchedFiles,
+      combinedDiffChars: 0,
+      combinedDiffPreview: '',
+    };
     let docContent: string;
     try {
       docContent = await fetchFileFromRepo(octokit, docsRepo, target.docsPath, docsBranch);
     } catch (e) {
+      debugReport.targets.push(targetDebug);
       runReport.targets.push({
         docPath: target.docsPath,
         matchedFiles: target.matchedFiles,
@@ -485,6 +517,9 @@ const main = async () => {
     }
     const snippet = extractSection(docContent, target.anchor);
     const combinedDiff = target.matchedFiles.map((f) => fileDiffs.get(f) || '').join('\n');
+    targetDebug.combinedDiffChars = combinedDiff.length;
+    targetDebug.combinedDiffPreview = combinedDiff.slice(0, 1600);
+    targetDebug.snippetChars = snippet.length;
     let patch: string;
     let strictRetry = false;
     let contentFallback = false;
@@ -493,6 +528,7 @@ const main = async () => {
     } else {
       if (!clientBundle) throw new Error('LLM client not initialized');
       const prompt = buildPrompt({ diff: combinedDiff, docPath: target.docsPath, docContent: snippet, styleGuide });
+      targetDebug.promptChars = prompt.length;
       if (args.verbose) console.log(`\nPrompt for ${target.docsPath}:\n${prompt}\n`);
       patch = await generatePatch(clientBundle!.client, clientBundle!.model, prompt, args.user);
       try {
@@ -505,6 +541,7 @@ const main = async () => {
           docContent: snippet,
           styleGuide,
         });
+        targetDebug.strictPromptChars = strictPrompt.length;
         if (args.verbose) {
           console.log(`\nRetrying with strict patch prompt for ${target.docsPath}\n`);
         }
@@ -515,6 +552,7 @@ const main = async () => {
       patch = normalizePatch(target.docsPath, docContent, patch);
     } catch (primaryErr) {
       if (args.mock) {
+        debugReport.targets.push(targetDebug);
         console.warn(`Skipping ${target.docsPath}: ${(primaryErr as Error).message}`);
         runReport.targets.push({
           docPath: target.docsPath,
@@ -534,9 +572,11 @@ const main = async () => {
           docContent,
           styleGuide,
         });
+        targetDebug.fullDocPromptChars = fullDocPrompt.length;
         const updatedDoc = await generateUpdatedDoc(clientBundle!.client, clientBundle!.model, fullDocPrompt, args.user);
         const contentPatch = buildPatchFromContent(target.docsPath, docContent, updatedDoc);
         if (!contentPatch) {
+          debugReport.targets.push(targetDebug);
           runReport.targets.push({
             docPath: target.docsPath,
             matchedFiles: target.matchedFiles,
@@ -550,6 +590,7 @@ const main = async () => {
         }
         patch = normalizePatch(target.docsPath, docContent, contentPatch);
       } catch (fallbackErr) {
+        debugReport.targets.push(targetDebug);
         const reason = `${(primaryErr as Error).message}; fallback failed: ${(fallbackErr as Error).message}`;
         console.warn(`Skipping ${target.docsPath}: ${reason}`);
         runReport.targets.push({
@@ -563,6 +604,7 @@ const main = async () => {
         continue;
       }
     }
+    debugReport.targets.push(targetDebug);
     writeSuggestionFiles(outDir, target.docsPath, patch);
     collected.push({ docPath: target.docsPath, patch, matchedFiles: target.matchedFiles });
     runReport.targets.push({
@@ -575,6 +617,7 @@ const main = async () => {
   }
   runReport.generatedPatchCount = collected.length;
   fs.writeFileSync(path.join(outDir, 'run-report.json'), JSON.stringify(runReport, null, 2), 'utf8');
+  fs.writeFileSync(path.join(outDir, 'llm-input-debug.json'), JSON.stringify(debugReport, null, 2), 'utf8');
 
   if (collected.length === 0) {
     console.log('No valid doc patches generated.');
