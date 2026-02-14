@@ -161,6 +161,16 @@
       font-weight: 600;
       min-width: 120px;
     }
+    .focus-mode .sidebar {
+      display: none;
+    }
+    .focus-mode .main-feed {
+      flex: 1 1 auto;
+      max-height: none;
+    }
+    .focus-mode .container {
+      max-width: 980px;
+    }
     .feed-tools {
       display: flex;
       align-items: center;
@@ -466,6 +476,7 @@
         <button id="quickPollBtn">Quick Poll</button>
         <button id="callBtn" aria-label="Make a Webex call">📞 Call</button>
         <button id="videoCallBtn" aria-label="Start a Webex video call">🎥 Video Call</button>
+        <button id="focusModeBtn" aria-label="Toggle focus mode">Focus Mode: Off</button>
       </div>
       <div class="feed-tools">
         <p id="feedStatus" class="feed-status">Showing all feed items</p>
@@ -686,7 +697,9 @@
     const videoCallBannerStatus = document.getElementById('videoCallBannerStatus');
     const videoJoinBtn = document.getElementById('videoJoinBtn');
     const videoEndBtn = document.getElementById('videoEndBtn');
+    const focusModeBtn = document.getElementById('focusModeBtn');
     let activeVideoCallUrl = '';
+    let isFocusMode = false;
 
     function hideForms() {
       postCreation.style.display = 'none';
@@ -741,6 +754,12 @@
       updateVideoPreview();
       videoCallModal.classList.add('show');
       document.getElementById('videoTopic').focus();
+    };
+    focusModeBtn.onclick = () => {
+      isFocusMode = !isFocusMode;
+      document.body.classList.toggle('focus-mode', isFocusMode);
+      focusModeBtn.textContent = `Focus Mode: ${isFocusMode ? 'On' : 'Off'}`;
+      showToast(isFocusMode ? 'Focus Mode enabled.' : 'Focus Mode disabled.');
     };
     // Groups modal logic
     document.getElementById('groupsModalClose').onclick = () => {
