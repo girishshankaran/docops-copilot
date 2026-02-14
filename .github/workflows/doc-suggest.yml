@@ -35,8 +35,14 @@ jobs:
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             base_ref="${{ github.base_ref }}"
-            git fetch --depth=1 origin "${base_ref}"
-            git diff --unified=3 "origin/${base_ref}...HEAD" > /tmp/diff.patch
+            # Fetch base branch with enough history to compute merge-base reliably.
+            git fetch origin "${base_ref}"
+            if merge_base="$(git merge-base "origin/${base_ref}" HEAD 2>/dev/null)"; then
+              git diff --unified=3 "${merge_base}" HEAD > /tmp/diff.patch
+            else
+              echo "No merge-base between origin/${base_ref} and HEAD; falling back to two-dot diff."
+              git diff --unified=3 "origin/${base_ref}..HEAD" > /tmp/diff.patch
+            fi
           else
             git diff --unified=3 HEAD^ HEAD > /tmp/diff.patch
           fi
