@@ -1,5 +1,7 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
+import { execSync } from 'child_process';
 import yaml from 'js-yaml';
 import { Octokit } from '@octokit/rest';
 import { minimatch } from 'minimatch';
@@ -244,11 +246,64 @@ const writeSuggestionFiles = (outDir: string, docPath: string, patch: string, ra
   if (rationale) fs.writeFileSync(path.join(outDir, `${safeName}.txt`), rationale, 'utf8');
 };
 
+const fixBareHunkHeaders = (patch: string): string => {
+  const lines = patch.split(/\r?\n/);
+  const out: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.trim() !== '@@') {
+      out.push(line);
+      continue;
+    }
+    const hunk: string[] = [];
+    let j = i + 1;
+    while (j < lines.length && !lines[j].startsWith('@@') && !lines[j].startsWith('diff --git')) {
+      hunk.push(lines[j]);
+      j++;
+    }
+    const oldCount = hunk.filter((l) => !l.startsWith('+') && l !== '\\ No newline at end of file').length;
+    const newCount = hunk.filter((l) => !l.startsWith('-') && l !== '\\ No newline at end of file').length;
+    const oldStart = oldCount === 0 ? 0 : 1;
+    const newStart = 1;
+    out.push(`@@ -${oldStart},${oldCount} +${newStart},${newCount} @@`);
+    out.push(...hunk);
+    i = j - 1;
+  }
+  return out.join('\n');
+};
+
+const isPatchApplicable = (docPath: string, docContent: string, patch: string): boolean => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'docops-patch-check-'));
+  try {
+    const aPath = path.join(tmpRoot, 'a', docPath);
+    const bDir = path.dirname(path.join(tmpRoot, 'b', docPath));
+    fs.mkdirSync(path.dirname(aPath), { recursive: true });
+    fs.mkdirSync(bDir, { recursive: true });
+    fs.writeFileSync(aPath, docContent, 'utf8');
+    fs.writeFileSync(path.join(tmpRoot, 'candidate.patch'), patch, 'utf8');
+    execSync(`git apply --check --unsafe-paths "${path.join(tmpRoot, 'candidate.patch')}"`, { cwd: tmpRoot, stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+};
+
+const normalizePatch = (docPath: string, docContent: string, patch: string): string => {
+  const trimmed = patch.trim();
+  if (isPatchApplicable(docPath, docContent, trimmed)) return trimmed;
+  const fixed = fixBareHunkHeaders(trimmed);
+  if (fixed !== trimmed && isPatchApplicable(docPath, docContent, fixed)) return fixed;
+  throw new Error(`Generated patch for ${docPath} is invalid/corrupt`);
+};
+
 const buildMockPatch = (docPath: string): string =>
   [
+    `diff --git a/${docPath} b/${docPath}`,
     `--- a/${docPath}`,
     `+++ b/${docPath}`,
-    '@@',
+    '@@ -1,0 +1,1 @@',
     '+<!-- mock patch: generated locally without OpenAI -->',
   ].join('\n');
 
@@ -308,6 +363,7 @@ const main = async () => {
       if (args.verbose) console.log(`\nPrompt for ${target.docsPath}:\n${prompt}\n`);
       patch = await generatePatch(clientBundle!.client, clientBundle!.model, prompt, args.user);
     }
+    patch = normalizePatch(target.docsPath, docContent, patch);
     writeSuggestionFiles(outDir, target.docsPath, patch);
     collected.push({ docPath: target.docsPath, patch, matchedFiles: target.matchedFiles });
   }

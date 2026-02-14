@@ -184,10 +184,20 @@ jobs:
           git clone --depth=1 "https://${DOCS_PAT}@github.com/${DOCS_REPO}.git" /tmp/docs-repo
           cd /tmp/docs-repo
           git checkout "${DOCS_BRANCH}"
+          applied=0
           for p in "$GITHUB_WORKSPACE"/suggestions/*.patch; do
             echo "Applying $p"
-            git apply "$p"
+            if git apply --check "$p"; then
+              git apply "$p"
+              applied=$((applied+1))
+            else
+              echo "Skipping invalid patch: $p"
+            fi
           done
+          if [ "$applied" -eq 0 ]; then
+            echo "No valid patches to apply."
+            exit 0
+          fi
           if [ -z "$(git status --porcelain)" ]; then
             echo "No changes after applying patches."
             exit 0
