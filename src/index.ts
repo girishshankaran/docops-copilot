@@ -369,16 +369,23 @@ const buildPatchFromContent = (docPath: string, oldContent: string, newContent: 
     const newPath = path.join(tmpRoot, 'new.md');
     fs.writeFileSync(oldPath, oldContent, 'utf8');
     fs.writeFileSync(newPath, newContent, 'utf8');
-    const res = spawnSync(
-      'git',
-      ['diff', '--no-index', '--unified=3', '--label', `a/${docPath}`, '--label', `b/${docPath}`, oldPath, newPath],
-      { encoding: 'utf8' },
-    );
+    const res = spawnSync('git', ['diff', '--no-index', '--unified=3', oldPath, newPath], { encoding: 'utf8' });
     if (res.status !== 0 && res.status !== 1) {
       throw new Error(res.stderr?.trim() || `git diff failed with status ${res.status}`);
     }
-    const patch = (res.stdout || '').trim();
-    return patch || undefined;
+    const raw = (res.stdout || '').trim();
+    if (!raw) return undefined;
+    const lines = raw.split('\n');
+    const hunkStart = lines.findIndex((l) => l.startsWith('@@ '));
+    if (hunkStart < 0) return undefined;
+    const hunks = lines.slice(hunkStart).join('\n');
+    const patch = [
+      `diff --git a/${docPath} b/${docPath}`,
+      `--- a/${docPath}`,
+      `+++ b/${docPath}`,
+      hunks,
+    ].join('\n');
+    return patch;
   } finally {
     fs.rmSync(tmpRoot, { recursive: true, force: true });
   }
