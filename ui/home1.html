@@ -183,6 +183,38 @@
       font-size: 0.8rem;
       font-weight: 700;
     }
+    .video-call-banner {
+      margin-bottom: 12px;
+      border: 1px solid #cfe1f5;
+      background: #f5faff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .video-call-banner strong {
+      color: var(--brand-strong);
+      display: block;
+      margin-bottom: 2px;
+    }
+    .video-call-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .video-call-actions button {
+      flex: 0 0 auto;
+      min-width: 96px;
+    }
+    .danger-btn {
+      background: #c84545;
+    }
+    .danger-btn:hover {
+      background: #ac3737;
+    }
     .post,
     .poll {
       margin-bottom: 1.2rem;
@@ -439,6 +471,17 @@
         <p id="feedStatus" class="feed-status">Showing all feed items</p>
         <span id="feedCount" class="pill">0 items</span>
       </div>
+      <div class="video-call-banner">
+        <div>
+          <strong>Active Video Call</strong>
+          <div id="videoCallBannerStatus" class="feed-status">No active video call.</div>
+        </div>
+        <div class="video-call-actions">
+          <button id="videoInstantBtn">Start instant room</button>
+          <button id="videoJoinBtn" style="display:none;">Join</button>
+          <button id="videoEndBtn" class="danger-btn" style="display:none;">End</button>
+        </div>
+      </div>
       <div id="postsContainer"></div>
       <div id="postCreation" style="display: none; margin-top: 1rem;">
         <h3>Create Post</h3>
@@ -640,6 +683,10 @@
     const videoCallModal = document.getElementById('videoCallModal');
     const feedStatus = document.getElementById('feedStatus');
     const feedCount = document.getElementById('feedCount');
+    const videoCallBannerStatus = document.getElementById('videoCallBannerStatus');
+    const videoJoinBtn = document.getElementById('videoJoinBtn');
+    const videoEndBtn = document.getElementById('videoEndBtn');
+    let activeVideoCallUrl = '';
 
     function hideForms() {
       postCreation.style.display = 'none';
@@ -684,6 +731,16 @@
       videoCallModal.classList.add('show');
       document.getElementById('videoTopic').focus();
       updateVideoPreview();
+    };
+    document.getElementById('videoInstantBtn').onclick = () => {
+      hideForms();
+      document.getElementById('videoTopic').value = 'Instant Team Room';
+      document.getElementById('videoParticipant').value = 'team@cisco.com';
+      document.getElementById('videoCameraToggle').checked = true;
+      document.getElementById('videoMicToggle').checked = true;
+      updateVideoPreview();
+      videoCallModal.classList.add('show');
+      document.getElementById('videoTopic').focus();
     };
     // Groups modal logic
     document.getElementById('groupsModalClose').onclick = () => {
@@ -769,7 +826,15 @@
       const webexUrl = `https://cisco.webex.com/meet/gisankar?topic=${encodeURIComponent(topic)}&cam=${cameraOn ? 'on' : 'off'}&mic=${micOn ? 'on' : 'off'}`;
       window.open(webexUrl, '_blank');
       showToast(`Video call started for "${topic}" with ${participant}.`);
+      setActiveVideoCall(topic, participant, webexUrl);
       closeVideoCall();
+    };
+    videoJoinBtn.onclick = () => {
+      if (activeVideoCallUrl) window.open(activeVideoCallUrl, '_blank');
+    };
+    videoEndBtn.onclick = () => {
+      clearActiveVideoCall();
+      showToast('Video call ended.');
     };
 
     function showGroups() {
@@ -971,6 +1036,18 @@
       document.getElementById('videoMicToggle').checked = true;
       updateVideoPreview();
       videoCallModal.classList.remove('show');
+    }
+    function setActiveVideoCall(topic, participant, url) {
+      activeVideoCallUrl = url;
+      videoCallBannerStatus.textContent = `Live: "${topic}" with ${participant}`;
+      videoJoinBtn.style.display = 'inline-block';
+      videoEndBtn.style.display = 'inline-block';
+    }
+    function clearActiveVideoCall() {
+      activeVideoCallUrl = '';
+      videoCallBannerStatus.textContent = 'No active video call.';
+      videoJoinBtn.style.display = 'none';
+      videoEndBtn.style.display = 'none';
     }
 
     function getSelectedValues(selectId) {
