@@ -184,6 +184,25 @@ const buildPrompt = (params: {
   ].filter(Boolean).join('\n\n');
 };
 
+const buildStrictPatchPrompt = (params: {
+  diff: string;
+  docPath: string;
+  docContent: string;
+  styleGuide?: string;
+}): string => {
+  const base = buildPrompt(params);
+  return [
+    base,
+    'IMPORTANT PATCH FORMAT RULES:',
+    '- Include diff header: diff --git a/<path> b/<path>.',
+    '- Include --- a/<path> and +++ b/<path> lines.',
+    '- Every hunk header must include ranges (example: @@ -10,2 +10,3 @@).',
+    '- Do not output bare @@.',
+    '- Do not include markdown fences.',
+    '- Patch must be directly applicable with git apply.',
+  ].join('\n');
+};
+
 const generatePatch = async (
   client: OpenAI | AzureOpenAI,
   model: string,
@@ -362,10 +381,34 @@ const main = async () => {
       const prompt = buildPrompt({ diff: combinedDiff, docPath: target.docsPath, docContent: snippet, styleGuide });
       if (args.verbose) console.log(`\nPrompt for ${target.docsPath}:\n${prompt}\n`);
       patch = await generatePatch(clientBundle!.client, clientBundle!.model, prompt, args.user);
+      try {
+        patch = normalizePatch(target.docsPath, docContent, patch);
+      } catch {
+        const strictPrompt = buildStrictPatchPrompt({
+          diff: combinedDiff,
+          docPath: target.docsPath,
+          docContent: snippet,
+          styleGuide,
+        });
+        if (args.verbose) {
+          console.log(`\nRetrying with strict patch prompt for ${target.docsPath}\n`);
+        }
+        patch = await generatePatch(clientBundle!.client, clientBundle!.model, strictPrompt, args.user);
+      }
     }
-    patch = normalizePatch(target.docsPath, docContent, patch);
+    try {
+      patch = normalizePatch(target.docsPath, docContent, patch);
+    } catch (e) {
+      console.warn(`Skipping ${target.docsPath}: ${(e as Error).message}`);
+      continue;
+    }
     writeSuggestionFiles(outDir, target.docsPath, patch);
     collected.push({ docPath: target.docsPath, patch, matchedFiles: target.matchedFiles });
+  }
+
+  if (collected.length === 0) {
+    console.log('No valid doc patches generated.');
+    return;
   }
 
   const summaryMd = buildCommentBody(collected);
