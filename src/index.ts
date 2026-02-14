@@ -339,6 +339,14 @@ const buildCommentBody = (items: { docPath: string; patch: string; matchedFiles:
   return lines.join('\n');
 };
 
+interface TargetRunReport {
+  docPath: string;
+  matchedFiles: string[];
+  status: 'generated' | 'skipped_invalid_patch' | 'fetch_failed';
+  reason?: string;
+  strictRetry?: boolean;
+}
+
 const main = async () => {
   const args = parseArgs();
   if (!args.docsRepo) throw new Error('docs repo is required (--docs-repo or DOCS_REPO env)');
@@ -352,8 +360,26 @@ const main = async () => {
   const fileDiffs = parseDiffFiles(diff);
   const changedFiles = Array.from(fileDiffs.keys());
   const targets = resolveTargets(changedFiles, docsMap);
+  ensureDir(outDir);
+  const runReport: {
+    generatedAt: string;
+    changedFiles: string[];
+    targetCount: number;
+    generatedPatchCount: number;
+    note?: string;
+    targets: TargetRunReport[];
+  } = {
+    generatedAt: new Date().toISOString(),
+    changedFiles,
+    targetCount: targets.length,
+    generatedPatchCount: 0,
+    targets: [],
+  };
   if (targets.length === 0) {
     console.log('No matching docs for changed files.');
+    runReport.note = 'No docs-map targets matched changed files.';
+    fs.writeFileSync(path.join(outDir, 'run-report.json'), JSON.stringify(runReport, null, 2), 'utf8');
+    fs.writeFileSync(path.join(outDir, 'suggestions.md'), 'No matching docs for changed files.\n', 'utf8');
     return;
   }
 
@@ -366,14 +392,26 @@ const main = async () => {
   const styleGuidePath = args.styleGuidePath || docsMap.style_guide;
   const styleGuide = styleGuidePath ? await fetchFileFromRepo(octokit, docsRepo, styleGuidePath, docsBranch) : undefined;
 
-  ensureDir(outDir);
   const collected: { docPath: string; patch: string; matchedFiles: string[] }[] = [];
 
   for (const target of targets) {
-    const docContent = await fetchFileFromRepo(octokit, docsRepo, target.docsPath, docsBranch);
+    let docContent: string;
+    try {
+      docContent = await fetchFileFromRepo(octokit, docsRepo, target.docsPath, docsBranch);
+    } catch (e) {
+      runReport.targets.push({
+        docPath: target.docsPath,
+        matchedFiles: target.matchedFiles,
+        status: 'fetch_failed',
+        reason: (e as Error).message,
+      });
+      console.warn(`Skipping ${target.docsPath}: ${(e as Error).message}`);
+      continue;
+    }
     const snippet = extractSection(docContent, target.anchor);
     const combinedDiff = target.matchedFiles.map((f) => fileDiffs.get(f) || '').join('\n');
     let patch: string;
+    let strictRetry = false;
     if (args.mock) {
       patch = buildMockPatch(target.docsPath);
     } else {
@@ -384,6 +422,7 @@ const main = async () => {
       try {
         patch = normalizePatch(target.docsPath, docContent, patch);
       } catch {
+        strictRetry = true;
         const strictPrompt = buildStrictPatchPrompt({
           diff: combinedDiff,
           docPath: target.docsPath,
@@ -400,14 +439,30 @@ const main = async () => {
       patch = normalizePatch(target.docsPath, docContent, patch);
     } catch (e) {
       console.warn(`Skipping ${target.docsPath}: ${(e as Error).message}`);
+      runReport.targets.push({
+        docPath: target.docsPath,
+        matchedFiles: target.matchedFiles,
+        status: 'skipped_invalid_patch',
+        reason: (e as Error).message,
+        strictRetry,
+      });
       continue;
     }
     writeSuggestionFiles(outDir, target.docsPath, patch);
     collected.push({ docPath: target.docsPath, patch, matchedFiles: target.matchedFiles });
+    runReport.targets.push({
+      docPath: target.docsPath,
+      matchedFiles: target.matchedFiles,
+      status: 'generated',
+      strictRetry,
+    });
   }
+  runReport.generatedPatchCount = collected.length;
+  fs.writeFileSync(path.join(outDir, 'run-report.json'), JSON.stringify(runReport, null, 2), 'utf8');
 
   if (collected.length === 0) {
     console.log('No valid doc patches generated.');
+    fs.writeFileSync(path.join(outDir, 'suggestions.md'), 'No valid doc patches generated.\n', 'utf8');
     return;
   }
 

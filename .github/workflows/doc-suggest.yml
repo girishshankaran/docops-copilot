@@ -169,10 +169,28 @@ jobs:
             --docs-branch ${DOCS_BRANCH} \
             --out-dir suggestions \
             --code-repo ${{ github.repository }}
+      - name: Show suggestion diagnostics
+        run: |
+          set -euo pipefail
+          if [ -d suggestions ]; then
+            echo "suggestions directory:"
+            ls -la suggestions
+            if [ -f suggestions/run-report.json ]; then
+              echo "run-report.json:"
+              cat suggestions/run-report.json
+            fi
+            if [ -f suggestions/suggestions.md ]; then
+              echo "suggestions.md:"
+              cat suggestions/suggestions.md
+            fi
+          else
+            echo "No suggestions directory was created."
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: doc-suggestions
           path: suggestions
+          if-no-files-found: warn
       - name: Auto-apply patches to docs repo
         if: ${{ env.DOCS_PAT != '' }}
         env:
