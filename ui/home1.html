@@ -17,6 +17,20 @@
       --muted: #58708a;
       --ring: rgba(15, 94, 168, 0.25);
       --shadow: 0 8px 24px rgba(6, 28, 52, 0.12);
+      --border: #c7d4e2;
+      --divider: #eee;
+    }
+
+    /* Dark theme overrides */
+    html[data-theme="dark"] {
+      --bg: #0b1621;
+      --surface: #0f2233;
+      --text: #e8f1fb;
+      --muted: #a6bdd6;
+      --ring: rgba(0, 188, 235, 0.28);
+      --shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+      --border: rgba(180, 205, 230, 0.22);
+      --divider: rgba(180, 205, 230, 0.14);
     }
 
     * {
@@ -52,6 +66,14 @@
       font-size: 1.5rem;
     }
 
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
     .search-bar input {
       padding: 0.55rem 0.8rem;
       font-size: 1rem;
@@ -61,8 +83,26 @@
       outline: none;
       color: var(--text);
     }
+
     .search-bar input:focus {
       box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
+    }
+
+    /* Theme button in header */
+    .theme-btn {
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.65);
+      background: rgba(255, 255, 255, 0.14);
+      color: white;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-weight: 700;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .theme-btn:hover {
+      background: rgba(255, 255, 255, 0.22);
     }
 
     .container {
@@ -81,19 +121,24 @@
       box-shadow: var(--shadow);
       max-height: 80vh;
       overflow-y: auto;
+      border: 1px solid var(--border);
     }
+
     .sidebar {
       flex: 1.6;
       display: flex;
       flex-direction: column;
       gap: 1.5rem;
     }
+
     .section {
       background: var(--surface);
       padding: 1rem 1.2rem;
       border-radius: 14px;
       box-shadow: var(--shadow);
+      border: 1px solid var(--border);
     }
+
     h2 {
       margin-top: 0;
       font-size: 1.2rem;
@@ -101,6 +146,7 @@
       border-bottom: 2px solid rgba(15, 94, 168, 0.26);
       margin-bottom: 1rem;
     }
+
     button {
       cursor: pointer;
       background: var(--brand);
@@ -112,9 +158,11 @@
       transition: background-color 0.3s;
       user-select: none;
     }
+
     button:hover {
       background: var(--brand-strong);
     }
+
     button:focus-visible,
     input:focus-visible,
     textarea:focus-visible,
@@ -122,6 +170,7 @@
       outline: 3px solid var(--ring);
       outline-offset: 1px;
     }
+
     .webex-btn {
       background: var(--success);
       color: white;
@@ -133,9 +182,11 @@
       user-select: none;
       white-space: nowrap;
     }
+
     .webex-btn:hover {
       background: #008930;
     }
+
     .wish-btn {
       background: #338034;
       color: white;
@@ -146,9 +197,11 @@
       user-select: none;
       white-space: nowrap;
     }
+
     .wish-btn:hover {
       background: #276628;
     }
+
     .actions {
       display: flex;
       gap: 1rem;
@@ -156,11 +209,13 @@
       flex-wrap: wrap;
       align-items: center;
     }
+
     .actions button {
       flex: 1 1 140px;
       font-weight: 600;
       min-width: 120px;
     }
+
     .feed-tools {
       display: flex;
       align-items: center;
@@ -168,26 +223,35 @@
       gap: 12px;
       margin-bottom: 12px;
     }
+
     .feed-status {
       margin: 0;
       color: var(--muted);
       font-size: 0.9rem;
       font-weight: 600;
     }
+
     .pill {
       border: 1px solid rgba(15, 94, 168, 0.3);
-      background: #f6fbff;
+      background: rgba(246, 251, 255, 0.9);
       color: var(--brand);
       border-radius: 999px;
       padding: 5px 10px;
       font-size: 0.8rem;
       font-weight: 700;
     }
+
+    html[data-theme="dark"] .pill {
+      background: rgba(10, 25, 40, 0.35);
+      border-color: rgba(0, 188, 235, 0.25);
+      color: #bfefff;
+    }
+
     .post,
     .poll {
       margin-bottom: 1.2rem;
       padding-bottom: 8px;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid var(--divider);
     }
 
     .post h3,
@@ -195,14 +259,16 @@
       margin: 0.2rem 0 0.5rem;
       color: var(--brand-strong);
     }
+
     .post time,
     .poll time {
       font-size: 0.85rem;
-      color: #666;
+      color: var(--muted);
       margin-left: 8px;
     }
+
     .post-tags span {
-      background: #d9e9fe;
+      background: rgba(217, 233, 254, 0.9);
       color: var(--brand-strong);
       padding: 2px 6px;
       margin-right: 6px;
@@ -212,38 +278,52 @@
       user-select: none;
     }
 
-    .post-actions,
-    .poll-actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 6px;
+    html[data-theme="dark"] .post-tags span {
+      background: rgba(0, 188, 235, 0.18);
+      color: #bfefff;
     }
+
     button:hover {
       filter: brightness(0.95);
     }
+
     .poll-block {
-      background: #ecf4fe;
+      background: rgba(236, 244, 254, 0.92);
       padding: 10px;
       border-radius: 8px;
       margin-top: 10px;
+      border: 1px solid var(--border);
     }
+
+    html[data-theme="dark"] .poll-block {
+      background: rgba(0, 188, 235, 0.08);
+    }
+
     .poll-options {
       list-style-type: none;
       padding: 0;
       margin: 0 0 12px 0;
       user-select: none;
     }
+
     .poll-options li {
       margin: 5px 0;
     }
+
     .poll-results {
       color: var(--brand-strong);
       font-weight: 600;
     }
+
+    html[data-theme="dark"] .poll-results {
+      color: #bfefff;
+    }
+
     .poll-results span {
       margin-right: 20px;
       font-size: 0.9rem;
     }
+
     .modal {
       display: none;
       position: fixed;
@@ -256,9 +336,11 @@
       align-items: center;
       justify-content: center;
     }
+
     .modal.show {
       display: flex;
     }
+
     .modal-content {
       background: var(--surface);
       width: 420px;
@@ -268,20 +350,28 @@
       box-shadow: var(--shadow);
       position: relative;
       user-select: none;
+      border: 1px solid var(--border);
     }
+
     .video-preview-box {
-      border: 1px solid #c7d4e2;
+      border: 1px solid var(--border);
       border-radius: 10px;
-      background: #f7fbff;
+      background: rgba(247, 251, 255, 0.92);
       padding: 10px;
-      color: #27415d;
+      color: var(--text);
       font-size: 0.92rem;
     }
+
+    html[data-theme="dark"] .video-preview-box {
+      background: rgba(0, 0, 0, 0.15);
+    }
+
     .video-preview-state {
       margin-top: 6px;
-      color: #46698d;
+      color: var(--muted);
       font-weight: 600;
     }
+
     .close-btn {
       position: static;
       font-size: 22px;
@@ -290,41 +380,60 @@
       cursor: pointer;
       user-select: none;
       margin-left: 30px;
+      background: transparent;
+      border: none;
     }
+
     .close-btn:hover {
       color: #555;
     }
+
     .group-header-wrapper {
       display: flex;
       align-items: center;
       margin-bottom: 10px;
     }
+
     .group-header-wrapper .group-name {
       cursor: pointer;
       flex-grow: 1;
-      background: #eef6ff;
+      background: rgba(238, 246, 255, 0.92);
       color: var(--brand-strong);
       font-weight: 600;
       padding: 8px 14px;
       border-radius: 8px;
       user-select: none;
       transition: background-color 0.2s;
+      border: 1px solid var(--border);
     }
+
+    html[data-theme="dark"] .group-header-wrapper .group-name {
+      background: rgba(0, 188, 235, 0.08);
+      color: #bfefff;
+    }
+
     .group-header-wrapper .group-name:hover {
-      background: #d3e4ff;
+      background: rgba(211, 228, 255, 0.95);
     }
+
+    html[data-theme="dark"] .group-header-wrapper .group-name:hover {
+      background: rgba(0, 188, 235, 0.14);
+    }
+
     .group-members {
       margin-left: 24px;
       border-left: 3px solid var(--brand);
       padding-left: 12px;
-      color: #444;
+      color: var(--text);
       user-select: none;
     }
+
     .empty-state {
       color: var(--muted);
       font-weight: 600;
       padding: 8px 0;
     }
+
     .toast {
       position: fixed;
       right: 16px;
@@ -340,29 +449,35 @@
       transition: opacity 0.2s ease, transform 0.2s ease;
       z-index: 1200;
     }
+
     .toast.show {
       opacity: 1;
       transform: translateY(0);
     }
+
     .content-input {
       width: 100%;
       padding: 8px;
       margin-bottom: 8px;
       border-radius: 8px;
-      border: 1px solid #c7d4e2;
+      border: 1px solid var(--border);
       font: inherit;
+      background: transparent;
+      color: var(--text);
     }
+
     .content-actions {
       display: flex;
       gap: 8px;
       justify-content: flex-end;
     }
+
     .photo-preview-wrap {
       margin-bottom: 10px;
       min-height: 48px;
       border: 1px dashed #b8cbde;
       border-radius: 10px;
-      background: #f9fcff;
+      background: rgba(249, 252, 255, 0.92);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -371,11 +486,18 @@
       font-size: 0.9rem;
       font-weight: 600;
     }
+
+    html[data-theme="dark"] .photo-preview-wrap {
+      background: rgba(0, 0, 0, 0.12);
+      border-color: rgba(180, 205, 230, 0.3);
+    }
+
     .photo-preview-wrap.dragover {
       border-color: var(--brand);
-      background: #eaf5ff;
+      background: rgba(234, 245, 255, 0.92);
       color: var(--brand);
     }
+
     .photo-preview {
       max-width: 100%;
       max-height: 260px;
@@ -383,33 +505,45 @@
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
       object-fit: cover;
     }
+
     .post-image {
       margin-top: 10px;
       max-width: min(560px, 100%);
       border-radius: 12px;
       box-shadow: 0 6px 16px rgba(8, 30, 56, 0.18);
     }
+
     @media (max-width: 1000px) {
       .container {
         flex-direction: column;
         padding: 1rem;
       }
+
       .main-feed {
         max-height: none;
       }
+
       .sidebar {
         gap: 1rem;
       }
     }
+
     @media (max-width: 680px) {
       header {
         padding: 0.8rem 1rem;
         flex-direction: column;
         align-items: flex-start;
       }
+
+      .header-right {
+        width: 100%;
+        justify-content: space-between;
+      }
+
       .search-bar input {
         width: 100%;
       }
+
       .actions button {
         flex: 1 1 calc(50% - 8px);
       }
@@ -420,10 +554,14 @@
 <body>
   <header>
     <h1>Cisco Social</h1>
-    <div class="search-bar">
-      <input id="globalSearch" type="search" placeholder="Search posts, polls, people..." />
+    <div class="header-right">
+      <div class="search-bar">
+        <input id="globalSearch" type="search" placeholder="Search posts, polls, people..." />
+      </div>
+      <button id="themeToggleBtn" class="theme-btn" aria-label="Toggle dark mode">🌙 Dark</button>
     </div>
   </header>
+
   <div class="container">
     <main class="main-feed">
       <div class="actions">
@@ -435,15 +573,19 @@
         <button id="callBtn" aria-label="Make a Webex call">📞 Call</button>
         <button id="videoCallBtn" aria-label="Start a Webex video call">🎥 Video Call</button>
       </div>
+
       <div class="feed-tools">
         <p id="feedStatus" class="feed-status">Showing all feed items</p>
         <span id="feedCount" class="pill">0 items</span>
       </div>
+
       <div id="postsContainer"></div>
+
       <div id="postCreation" style="display: none; margin-top: 1rem;">
         <h3>Create Post</h3>
         <input id="postTitle" class="content-input" type="text" placeholder="Title" />
-        <textarea id="postContent" class="content-input" placeholder="What's on your mind?" style="height: 90px"></textarea>
+        <textarea id="postContent" class="content-input" placeholder="What's on your mind?"
+          style="height: 90px"></textarea>
         <input id="postTags" class="content-input" type="text" placeholder="Tags (comma separated)" />
         <select id="postBU" multiple class="content-input">
           <option value="All">All</option>
@@ -457,10 +599,12 @@
           <button id="postSubmit">Post</button>
         </div>
       </div>
+
       <div id="pollCreation" style="display: none; margin-top: 1rem;">
         <h3>Create Quick Poll</h3>
         <input id="pollQuestion" class="content-input" placeholder="Poll question" />
-        <textarea id="pollOptions" class="content-input" placeholder="One option per line" style="height: 90px"></textarea>
+        <textarea id="pollOptions" class="content-input" placeholder="One option per line"
+          style="height: 90px"></textarea>
         <select id="pollBU" multiple class="content-input">
           <option value="All">All</option>
           <option value="Marketing">Marketing</option>
@@ -473,10 +617,12 @@
           <button id="pollSubmit">Post</button>
         </div>
       </div>
+
       <div id="photoCreation" style="display: none; margin-top: 1rem;">
         <h3>Upload Photo</h3>
         <input id="photoTitle" class="content-input" type="text" placeholder="Photo title" />
-        <textarea id="photoCaption" class="content-input" placeholder="Add a caption (optional)" style="height: 90px"></textarea>
+        <textarea id="photoCaption" class="content-input" placeholder="Add a caption (optional)"
+          style="height: 90px"></textarea>
         <input id="photoFile" class="content-input" type="file" accept="image/*" />
         <div id="photoPreviewWrap" class="photo-preview-wrap">No photo selected. Drag and drop an image here.</div>
         <select id="photoBU" multiple class="content-input">
@@ -492,6 +638,7 @@
         </div>
       </div>
     </main>
+
     <aside class="sidebar">
       <section class="section">
         <h2>Upcoming Events</h2>
@@ -499,12 +646,14 @@
         <div>Team Coffee Chat - Aug 22 <button>RSVP</button></div>
         <div>Cisco Content Expo - March 2026 <button>RSVP</button></div>
       </section>
+
       <section class="section">
         <h2>Job Opportunities</h2>
         <div>Data Scientist - New York <button>Apply</button></div>
         <div>UX Designer - Remote <button>Apply</button></div>
         <div>Cloud Engineer - San Francisco <button>Apply</button></div>
       </section>
+
       <section class="section">
         <h2>New Hires</h2>
         <div class="new-hire">
@@ -517,12 +666,14 @@
           Sara P. (HR) <button class="wish-btn" onclick="wishGoodLuck('Sara P.')">Wish</button>
         </div>
       </section>
+
       <section class="section">
         <h2>Work Anniversaries</h2>
         <div>John M. - 5 Years</div>
         <div>Alice R. - 3 Years</div>
         <div>David K. - 1 Year</div>
       </section>
+
       <section class="section">
         <h2>Notifications</h2>
         <div>New message from Sarah J.</div>
@@ -531,7 +682,8 @@
       </section>
     </aside>
   </div>
-  <!-- Groups Modal with "New" button aligned and spaced to the right of heading -->
+
+  <!-- Groups Modal -->
   <div id="groupsModal" class="modal">
     <div class="modal-content">
       <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -539,17 +691,19 @@
           <h2 style="margin: 0;">Groups</h2>
           <button id="groupsNewBtn" style="margin-left: 24px; font-size: 1rem; padding: 7px 18px;">New</button>
         </div>
-        <button id="groupsModalClose" class="close-btn" style="margin-left: 35px;">&times;</button>
+        <button id="groupsModalClose" class="close-btn" style="margin-left: 35px;" aria-label="Close groups">&times;</button>
       </div>
       <div id="groupsContainer" style="margin-top: 1.1rem;"></div>
       <div id="groupCreationForm" style="display:none; margin-top: 1rem;">
-        <input id="groupNameInput" type="text" placeholder="Group Name" style="width: 100%; padding: 8px; margin-bottom: 8px" />
-        <textarea id="groupCriteriaInput" placeholder="Criteria (skills, departments)" style="width: 100%; padding: 8px; margin-bottom: 8px; height: 80px"></textarea>
+        <input id="groupNameInput" type="text" placeholder="Group Name"
+          style="width: 100%; padding: 8px; margin-bottom: 8px" />
+        <textarea id="groupCriteriaInput" placeholder="Criteria (skills, departments)"
+          style="width: 100%; padding: 8px; margin-bottom: 8px; height: 80px"></textarea>
         <button id="groupCreateSubmitBtn">Create Group</button>
       </div>
     </div>
   </div>
-  <!-- Shout Out Modal -->
+
   <!-- Call Modal -->
   <div id="callModal" class="modal">
     <div class="modal-content">
@@ -567,6 +721,7 @@
       </div>
     </div>
   </div>
+
   <!-- Video Call Modal -->
   <div id="videoCallModal" class="modal">
     <div class="modal-content">
@@ -596,7 +751,56 @@
       </div>
     </div>
   </div>
+
   <script>
+    /***********************
+     * NEW FEATURE: Persisted Theme + Persisted Data (localStorage)
+     ************************/
+
+    const STORAGE_KEY = 'cisco_social_state_v1';
+    const THEME_KEY = 'cisco_social_theme_v1';
+
+    function safeJsonParse(text, fallback) {
+      try { return JSON.parse(text); } catch { return fallback; }
+    }
+
+    function loadTheme() {
+      const t = localStorage.getItem(THEME_KEY) || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+      updateThemeToggleLabel();
+    }
+
+    function toggleTheme() {
+      const cur = document.documentElement.getAttribute('data-theme') || 'light';
+      const next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem(THEME_KEY, next);
+      updateThemeToggleLabel();
+      showToast(next === 'dark' ? 'Dark mode enabled.' : 'Light mode enabled.');
+    }
+
+    function updateThemeToggleLabel() {
+      const cur = document.documentElement.getAttribute('data-theme') || 'light';
+      const btn = document.getElementById('themeToggleBtn');
+      if (!btn) return;
+      btn.textContent = cur === 'dark' ? '☀️ Light' : '🌙 Dark';
+      btn.setAttribute('aria-label', cur === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+    }
+
+    function saveState() {
+      const state = { posts, groups };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const state = safeJsonParse(raw, null);
+      if (!state) return;
+      if (Array.isArray(state.posts)) posts = state.posts;
+      if (Array.isArray(state.groups)) groups = state.groups;
+    }
+
     // DATA
     const employees = [
       { name: 'Emma L.', skills: ['Marketing', 'AI'] },
@@ -615,10 +819,9 @@
     ];
 
     let groups = [
-      // CHANGED "Marketers" group to "Python Group" and set Webex link
       { name: "AI Engineers", criteria: ["ai", "machine learning", "engineering"], members: ["Raj S.", "David K.", "Priya S.", "Megan G.", "Brian Z."], webex: "https://webex.com/meet/ai-engineers" },
       { name: "UX Designers", criteria: ["ux design"], members: ["Alice R.", "Chris W.", "Luis Q.", "Mei T."], webex: "https://webex.com/meet/ux-designers" },
-      { name: "Python Group", criteria: ["marketing"], members: ["Emma L.", "John M.", "Anil R.", "Sara P."], webex: "https://cisco.webex.com/meet/gisankar" }, // <-- changed
+      { name: "Python Group", criteria: ["marketing"], members: ["Emma L.", "John M.", "Anil R.", "Sara P."], webex: "https://cisco.webex.com/meet/gisankar" },
       { name: "ML Innovators", criteria: ["machine learning"], members: ["Raj S.", "Chris W.", "Brian Z.", "Priya S."], webex: "https://webex.com/meet/ml-innovators" }
     ];
 
@@ -626,6 +829,7 @@
       { type: 'post', author: 'Lisa T.', date: '2025-08-20', title: 'Great teamwork on Q3 launch', content: 'Shoutout to team!', tags: ['#Q3', '#Success'], bu: ['All'] },
       { type: 'poll', author: 'HR Team', date: '2025-08-18', question: 'Do you like the new WFH policy?', options: ['Yes', 'No', 'Not Sure'], votes: [12, 5, 3], voters: {}, bu: ['All'] }
     ];
+
     let activeQuery = '';
     let toastTimer;
 
@@ -685,6 +889,10 @@
       document.getElementById('videoTopic').focus();
       updateVideoPreview();
     };
+
+    // NEW: Theme toggle
+    document.getElementById('themeToggleBtn').onclick = toggleTheme;
+
     // Groups modal logic
     document.getElementById('groupsModalClose').onclick = () => {
       groupsModal.style.display = 'none';
@@ -701,12 +909,8 @@
         groupCreationForm.style.display = 'none';
         groupsContainer.innerHTML = '';
       }
-      if (e.target === callModal) {
-        closeCall();
-      }
-      if (e.target === videoCallModal) {
-        closeVideoCall();
-      }
+      if (e.target === callModal) closeCall();
+      if (e.target === videoCallModal) closeVideoCall();
     };
 
     document.getElementById('groupCreateSubmitBtn').onclick = () => {
@@ -718,11 +922,16 @@
       }
       const criteria = criteriaText.split(',').map(c => c.trim().toLowerCase());
       const members = employees.filter(e => e.skills.some(s => criteria.includes(s.toLowerCase()))).map(e => e.name);
-      // If creating "Python Group", always use the special Cisco Webex link
+
       const url = name.toLowerCase() === 'python group'
         ? 'https://cisco.webex.com/meet/gisankar'
         : `https://webex.com/meet/${encodeURIComponent(name.toLowerCase().replace(/\s+/g, '-'))}`;
+
       groups.push({ name, criteria, members, webex: url });
+
+      // NEW: persist
+      saveState();
+
       groupCreationForm.style.display = 'none';
       document.getElementById('groupNameInput').value = '';
       document.getElementById('groupCriteriaInput').value = '';
@@ -747,6 +956,7 @@
       showToast(`Starting Webex call to ${cc} ${num}...`);
       closeCall();
     };
+
     // Video Call handlers
     document.getElementById('videoCallCloseBtn').onclick = closeVideoCall;
     document.getElementById('videoCallCancelBtn').onclick = closeVideoCall;
@@ -789,7 +999,6 @@
         const meetBtn = document.createElement('button');
         meetBtn.className = 'webex-btn';
         meetBtn.textContent = 'Meet';
-        // For Python Group, use the special Cisco Webex link
         meetBtn.onclick = (e) => {
           e.stopPropagation();
           if (g.name.toLowerCase() === 'python group') {
@@ -809,7 +1018,6 @@
 
     function showMembers(idx) {
       const g = groups[idx];
-      // For Python Group, use the special Cisco Webex link
       const meetUrl = g.name.toLowerCase() === 'python group'
         ? 'https://cisco.webex.com/meet/gisankar'
         : g.webex;
@@ -843,8 +1051,8 @@
             <h3>${sanitize(post.title)}</h3>
             <p>${sanitize(post.content)}</p>
             ${post.image ? `<img class="post-image" src="${sanitize(post.image)}" alt="${sanitize(post.title || 'Uploaded photo')}" />` : ''}
-            <div class="post-tags">${post.tags.map(t => `<span>${sanitize(t)}</span>`).join('')}</div>
-            <div><em>Visible to: ${sanitize(post.bu.join(', '))}</em></div>
+            <div class="post-tags">${(post.tags || []).map(t => `<span>${sanitize(t)}</span>`).join('')}</div>
+            <div><em>Visible to: ${sanitize((post.bu || ['All']).join(', '))}</em></div>
             <div><button>👍 Like</button><button>💬 Comment</button><button>🔄 Share</button></div>
           `;
           postsContainer.appendChild(div);
@@ -861,7 +1069,7 @@
         <strong>${sanitize(post.author)}</strong> <time>${sanitize(post.date)}</time>
         <div class="poll-block">
           <div class="poll-question">${sanitize(post.question)}</div>
-          <div><em>Visible to: ${sanitize(post.bu.join(', '))}</em></div>
+          <div><em>Visible to: ${sanitize((post.bu || ['All']).join(', '))}</em></div>
           <div id="pollArea${idx}"></div>
         </div>
       `;
@@ -880,11 +1088,15 @@
           if (!post.voters) post.voters = {};
           post.voters['demo-user'] = sel.value;
           post.votes[sel.value] = (post.votes[sel.value] || 0) + 1;
+
+          // NEW: persist
+          saveState();
+
           renderPosts();
         };
         pollArea.appendChild(form);
       } else {
-        const totalVotes = post.votes.reduce((a, b) => a + b, 0) || 1;
+        const totalVotes = (post.votes || []).reduce((a, b) => a + b, 0) || 1;
         let html = '';
         post.options.forEach((opt, i) => {
           const pct = Math.round((post.votes[i] || 0) * 100 / totalVotes);
@@ -900,9 +1112,9 @@
       if (!activeQuery) return true;
       const q = activeQuery.toLowerCase();
       if (post.type === 'post') {
-        return [post.author, post.title, post.content, post.tags.join(' '), post.bu.join(' ')].join(' ').toLowerCase().includes(q);
+        return [post.author, post.title, post.content, (post.tags || []).join(' '), (post.bu || []).join(' ')].join(' ').toLowerCase().includes(q);
       }
-      return [post.author, post.question, post.options.join(' '), post.bu.join(' ')].join(' ').toLowerCase().includes(q);
+      return [post.author, post.question, (post.options || []).join(' '), (post.bu || []).join(' ')].join(' ').toLowerCase().includes(q);
     }
 
     function sanitize(str) {
@@ -1016,6 +1228,10 @@
         tags,
         bu: getSelectedValues('postBU')
       });
+
+      // NEW: persist
+      saveState();
+
       clearPostForm();
       postCreation.style.display = 'none';
       renderPosts();
@@ -1042,6 +1258,10 @@
         voters: {},
         bu: getSelectedValues('pollBU')
       });
+
+      // NEW: persist
+      saveState();
+
       clearPollForm();
       pollCreation.style.display = 'none';
       renderPosts();
@@ -1131,6 +1351,10 @@
           tags: ['#Photo'],
           bu: getSelectedValues('photoBU')
         });
+
+        // NEW: persist
+        saveState();
+
         clearPhotoForm();
         photoCreation.style.display = 'none';
         renderPosts();
@@ -1139,7 +1363,11 @@
       reader.readAsDataURL(file);
     };
 
+    // Boot: load theme + load persisted state, then render
+    loadTheme();
+    loadState();
     renderPosts();
   </script>
 </body>
+
 </html>
