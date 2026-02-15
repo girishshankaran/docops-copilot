@@ -373,24 +373,31 @@ const normalizePatch = (docPath: string, docContent: string, patch: string): str
 };
 
 const buildPatchFromContent = (docPath: string, oldContent: string, newContent: string): string | undefined => {
-  if (oldContent === newContent) return undefined;
+  const normalizedOld = oldContent.replace(/\r\n/g, '\n');
+  const normalizedNew = newContent.replace(/\r\n/g, '\n');
+  if (normalizedOld === normalizedNew) return undefined;
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'docops-content-diff-'));
   try {
     const oldPath = path.join(tmpRoot, 'old.md');
     const newPath = path.join(tmpRoot, 'new.md');
-    fs.writeFileSync(oldPath, oldContent, 'utf8');
-    fs.writeFileSync(newPath, newContent, 'utf8');
-    const res = spawnSync(
-      'diff',
-      ['-u', '--label', `a/${docPath}`, '--label', `b/${docPath}`, oldPath, newPath],
-      { encoding: 'utf8' },
-    );
+    fs.writeFileSync(oldPath, normalizedOld, 'utf8');
+    fs.writeFileSync(newPath, normalizedNew, 'utf8');
+    const res = spawnSync('git', ['diff', '--no-index', '--unified=3', oldPath, newPath], { encoding: 'utf8' });
     if (res.status !== 0 && res.status !== 1) {
-      throw new Error(res.stderr?.trim() || `diff failed with status ${res.status}`);
+      throw new Error(res.stderr?.trim() || `git diff failed with status ${res.status}`);
     }
     const raw = (res.stdout || '').trim();
     if (!raw) return undefined;
-    return [`diff --git a/${docPath} b/${docPath}`, raw].join('\n');
+    const lines = raw.split('\n');
+    const hunkStart = lines.findIndex((l) => l.startsWith('@@ '));
+    if (hunkStart < 0) return undefined;
+    const hunks = lines.slice(hunkStart).join('\n');
+    return [
+      `diff --git a/${docPath} b/${docPath}`,
+      `--- a/${docPath}`,
+      `+++ b/${docPath}`,
+      hunks,
+    ].join('\n');
   } finally {
     fs.rmSync(tmpRoot, { recursive: true, force: true });
   }
