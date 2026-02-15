@@ -452,21 +452,46 @@ const buildDeterministicUiDocUpdate = (docContent: string, combinedDiff: string)
     lines.push('### Removed UI lines');
     for (const r of removed) lines.push(`- \`${r}\``);
   }
-  // Add actionable procedures for common UI capabilities detected in the diff.
-  if (diffLower.includes('report')) {
+  // Add actionable procedures inferred from added UI actions (generic, not feature-specific).
+  const addedButtons = added
+    .map((l) => {
+      const m = l.match(/<button[^>]*id="([^"]+)"[^>]*>([^<]+)<\/button>/i);
+      if (!m) return undefined;
+      return { id: m[1], label: m[2].trim() };
+    })
+    .filter((v): v is { id: string; label: string } => Boolean(v));
+  const addedActionIds = new Set(
+    added
+      .map((l) => {
+        const m = l.match(/getElementById\('([^']+)'\)\.onclick/i);
+        return m ? m[1] : undefined;
+      })
+      .filter((v): v is string => Boolean(v)),
+  );
+  const actionLabels = addedButtons
+    .filter((b) => addedActionIds.size === 0 || addedActionIds.has(b.id))
+    .map((b) => b.label)
+    .filter((v, i, arr) => arr.indexOf(v) === i);
+  const addedModals = added
+    .map((l) => {
+      const m = l.match(/id="([^"]*modal[^"]*)"/i);
+      return m ? m[1] : undefined;
+    })
+    .filter((v): v is string => Boolean(v))
+    .filter((v, i, arr) => arr.indexOf(v) === i);
+  if (actionLabels.length > 0 || addedModals.length > 0 || diffLower.includes('onclick')) {
     lines.push('');
-    lines.push('### Procedure: Generate Reports');
-    lines.push('1. Open the Cisco Social home page and click **Reports** in the toolbar.');
-    lines.push('2. In the Reports modal, choose the report type and department filters.');
-    lines.push('3. Set the date range and include/exclude inactive users as needed.');
-    lines.push('4. Click **Generate Report** and wait for the summary table to load.');
-    lines.push('5. Use **Export CSV** (or Download) to save the generated report.');
-  }
-  if (diffLower.includes('insights')) {
-    lines.push('');
-    lines.push('### Procedure: View Insights');
-    lines.push('1. From the toolbar, click **Insights**.');
-    lines.push('2. Review active post count and group summary in the insight toast/panel.');
+    lines.push('### Procedure: Use New UI Actions');
+    const scopedActions = actionLabels.length > 0 ? actionLabels : ['new toolbar action'];
+    for (const label of scopedActions) {
+      lines.push(`1. Open the Cisco Social home page and click **${label}**.`);
+      if (addedModals.length > 0) {
+        lines.push(`2. Use the opened panel/modal (${addedModals.join(', ')}) and enter required inputs.`);
+      } else {
+        lines.push('2. Follow the on-screen prompts and enter required inputs for the action.');
+      }
+      lines.push('3. Complete the action and verify confirmation via updated UI state or toast message.');
+    }
   }
   const block = lines.join('\n');
   if (docContent.includes('## Automated UI Sync Notes')) {
