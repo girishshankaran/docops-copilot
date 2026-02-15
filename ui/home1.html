@@ -413,6 +413,7 @@
 
     <div class="actions">
       <button id="postsBtn">Posts</button>
+      <button id="shoutOutBtn">Shout Out</button>
       <button id="photoUploadBtn">Upload Photo</button>
       <button id="quickPollBtn">Quick Poll</button>
       <button id="dataToolsBtn">Data Tools</button>
@@ -506,6 +507,54 @@
       <div>Project deadline updated</div>
     </section>
   </aside>
+</div>
+
+<!-- Shout Out Modal -->
+<div id="shoutOutModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-head">
+      <div>
+        <h2 style="margin:0;">Shout Out</h2>
+        <div class="muted small">Recognize a teammate and control who can see the shout out.</div>
+      </div>
+      <button id="shoutOutCloseBtn" class="close-btn" aria-label="Close shout out">&times;</button>
+    </div>
+
+    <label class="muted small" for="shoutOutPerson">Person</label>
+    <select id="shoutOutPerson" class="content-input">
+      <option value="">Select a person</option>
+      <option value="Raj S.">Raj S.</option>
+      <option value="Alice R.">Alice R.</option>
+      <option value="David K.">David K.</option>
+      <option value="Sarah J.">Sarah J.</option>
+      <option value="Priya M.">Priya M.</option>
+    </select>
+
+    <div class="muted small" style="margin-top:8px;">Visibility</div>
+    <label class="row small" style="gap:8px;">
+      <input type="radio" name="shoutOutVisibility" value="all" checked />
+      All
+    </label>
+    <label class="row small" style="gap:8px;">
+      <input type="radio" name="shoutOutVisibility" value="dept" />
+      Specific department(s)
+    </label>
+
+    <div id="shoutOutDeptWrap" style="display:none; margin-top:8px;">
+      <label class="muted small" for="shoutOutDeptSelect">Department</label>
+      <select id="shoutOutDeptSelect" multiple class="content-input">
+        <option value="Marketing">Marketing</option>
+        <option value="Engineering">Engineering</option>
+        <option value="Sales">Sales</option>
+        <option value="HR">HR</option>
+      </select>
+    </div>
+
+    <div class="row" style="justify-content:flex-end; margin-top:12px;">
+      <button id="shoutOutCancelBtn" class="btn-secondary">Cancel</button>
+      <button id="shoutOutOkBtn">OK</button>
+    </div>
+  </div>
 </div>
 
 
@@ -679,7 +728,7 @@
 <script>
 /**
  * Frontend-only demo app:
- * - Feed + posts/polls/photos
+ * - Feed + posts/polls/photos/shout-outs
  * - Option C: Export/Import JSON + Moderation workflow (report -> approve/remove)
  * - RBAC: employee/moderator/admin
  * - Reports Workspace: filtered report generation, preview, and local download history
@@ -882,6 +931,7 @@ const postsContainer = document.getElementById('postsContainer');
 const postCreation   = document.getElementById('postCreation');
 const pollCreation   = document.getElementById('pollCreation');
 const photoCreation  = document.getElementById('photoCreation');
+const shoutOutModal  = document.getElementById('shoutOutModal');
 
 const dataModal        = document.getElementById('dataModal');
 const moderationModal  = document.getElementById('moderationModal');
@@ -899,6 +949,7 @@ function hideForms(){
 }
 
 function hideOverlays(){
+  shoutOutModal.classList.remove('show');
   dataModal.classList.remove('show');
   moderationModal.classList.remove('show');
   reportsModal.classList.remove('show');
@@ -911,6 +962,7 @@ function hideOverlays(){
 document.getElementById('postsBtn').onclick = () => { hideOverlays(); hideForms(); postCreation.style.display='block'; };
 document.getElementById('quickPollBtn').onclick = () => { hideOverlays(); hideForms(); pollCreation.style.display='block'; };
 document.getElementById('photoUploadBtn').onclick = () => { hideOverlays(); hideForms(); photoCreation.style.display='block'; };
+document.getElementById('shoutOutBtn').onclick = () => { hideOverlays(); hideForms(); openShoutOut(); };
 
 document.getElementById('dataToolsBtn').onclick = () => { hideOverlays(); hideForms(); openDataTools(); };
 
@@ -931,8 +983,65 @@ document.getElementById('themeToggleBtn').onclick = toggleTheme;
 document.getElementById('roleSelect').addEventListener('change', (e) => setRole(e.target.value));
 
 /* -----------------------
-   Groups
+   Shout Out
 ----------------------- */
+function openShoutOut(){
+  resetShoutOutForm();
+  shoutOutModal.classList.add('show');
+}
+
+function getShoutOutDepartments(){
+  const visibility = document.querySelector('input[name="shoutOutVisibility"]:checked')?.value || 'all';
+  if (visibility === 'all') return ['All'];
+  const selected = Array.from(document.getElementById('shoutOutDeptSelect').selectedOptions).map(o => o.value);
+  return selected.length ? selected : [];
+}
+
+function resetShoutOutForm(){
+  document.getElementById('shoutOutPerson').value = '';
+  document.querySelector('input[name="shoutOutVisibility"][value="all"]').checked = true;
+  document.getElementById('shoutOutDeptSelect').selectedIndex = -1;
+  document.getElementById('shoutOutDeptWrap').style.display = 'none';
+}
+
+document.querySelectorAll('input[name="shoutOutVisibility"]').forEach((radio) => {
+  radio.addEventListener('change', () => {
+    const isDept = document.querySelector('input[name="shoutOutVisibility"]:checked')?.value === 'dept';
+    document.getElementById('shoutOutDeptWrap').style.display = isDept ? 'block' : 'none';
+  });
+});
+
+document.getElementById('shoutOutCloseBtn').onclick = () => shoutOutModal.classList.remove('show');
+document.getElementById('shoutOutCancelBtn').onclick = () => shoutOutModal.classList.remove('show');
+document.getElementById('shoutOutOkBtn').onclick = () => {
+  const person = document.getElementById('shoutOutPerson').value.trim();
+  const bu = getShoutOutDepartments();
+  if (!person) {
+    showToast('Please select a person for shout out.');
+    return;
+  }
+  if (!bu.length) {
+    showToast('Select at least one department or choose All.');
+    return;
+  }
+
+  posts.unshift(ensureModerationFields({
+    id: uid('post'),
+    type: 'post',
+    author: 'You',
+    date: formatDate(),
+    title: `Shout Out to ${person}`,
+    content: `${person}, thank you for the great contribution and collaboration.`,
+    tags: ['#ShoutOut', '#Recognition'],
+    bu,
+    moderation: { status:'active', flags:[] }
+  }));
+
+  saveState();
+  renderPosts();
+  shoutOutModal.classList.remove('show');
+  showToast(`Shout out posted for ${person}.`);
+};
 
 /* -----------------------
    Data tools (export/import) with RBAC
@@ -1731,7 +1840,7 @@ document.getElementById('photoSubmit').onclick = () => {
    Modal close: outside click + ESC
 ----------------------- */
 window.addEventListener('click', (e) => {
-  
+  if (e.target === shoutOutModal) shoutOutModal.classList.remove('show');
   if (e.target === dataModal) dataModal.classList.remove('show');
   if (e.target === moderationModal) moderationModal.classList.remove('show');
   if (e.target === reportsModal) reportsModal.classList.remove('show');
