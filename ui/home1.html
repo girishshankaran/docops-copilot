@@ -325,6 +325,7 @@
       <button id="groupsBtn">Groups</button>
       <button id="photoUploadBtn">Upload Photo</button>
       <button id="quickPollBtn">Quick Poll</button>
+      <button id="insightsBtn">Insights</button>
       <button id="dataToolsBtn">Data Tools</button>
       <button id="moderationBtn">Moderation</button>
     </div>
@@ -706,6 +707,13 @@ document.getElementById('postsBtn').onclick = () => { hideOverlays(); hideForms(
 document.getElementById('quickPollBtn').onclick = () => { hideOverlays(); hideForms(); pollCreation.style.display='block'; };
 document.getElementById('photoUploadBtn').onclick = () => { hideOverlays(); hideForms(); photoCreation.style.display='block'; };
 document.getElementById('groupsBtn').onclick = () => { hideOverlays(); hideForms(); openGroups(); };
+document.getElementById('insightsBtn').onclick = () => {
+  hideOverlays();
+  hideForms();
+  const activePosts = posts.filter(p => p.status !== 'removed').length;
+  const groupsCount = groups.length;
+  showToast(`Insights: ${activePosts} active posts, ${groupsCount} groups.`);
+};
 document.getElementById('dataToolsBtn').onclick = () => { hideOverlays(); hideForms(); openDataTools(); };
 document.getElementById('moderationBtn').onclick = () => { hideOverlays(); hideForms(); openModeration(); };
 document.getElementById('themeToggleBtn').onclick = toggleTheme;
