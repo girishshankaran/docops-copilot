@@ -1,1244 +1,1328 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Cisco Social - Home</title>
+
   <style>
     :root {
-      --brand: #0f5ea8;
-      --brand-strong: #0a4a84;
-      --accent: #00bceb;
-      --success: #0d8f5f;
-      --bg: #eef3f8;
-      --surface: #ffffff;
-      --text: #12324f;
-      --muted: #58708a;
-      --ring: rgba(15, 94, 168, 0.25);
-      --shadow: 0 8px 24px rgba(6, 28, 52, 0.12);
+      --brand:#0f5ea8; --brand-strong:#0a4a84; --accent:#00bceb; --success:#0d8f5f;
+      --bg:#eef3f8; --surface:#ffffff; --text:#12324f; --muted:#58708a;
+      --ring:rgba(15,94,168,.25); --shadow:0 8px 24px rgba(6,28,52,.12);
+      --border:#c7d4e2; --divider:#eee; --danger:#b3261e; --warn:#b86b00;
     }
-
-    * {
-      box-sizing: border-box;
+    html[data-theme="dark"]{
+      --bg:#0b1621; --surface:#0f2233; --text:#e8f1fb; --muted:#a6bdd6;
+      --ring:rgba(0,188,235,.28); --shadow:0 10px 28px rgba(0,0,0,.35);
+      --border:rgba(180,205,230,.22); --divider:rgba(180,205,230,.14);
+      --danger:#ff6b6b; --warn:#ffb020;
     }
-
-    body {
-      font-family: "Segoe UI", "Helvetica Neue", "Trebuchet MS", sans-serif;
-      margin: 0;
+    *{box-sizing:border-box}
+    body{
+      font-family:"Segoe UI","Helvetica Neue","Trebuchet MS",sans-serif;
+      margin:0;
       background:
-        radial-gradient(circle at 10% -10%, rgba(0, 188, 235, 0.12), transparent 32%),
-        radial-gradient(circle at 90% 10%, rgba(15, 94, 168, 0.12), transparent 28%),
+        radial-gradient(circle at 10% -10%, rgba(0,188,235,.12), transparent 32%),
+        radial-gradient(circle at 90% 10%, rgba(15,94,168,.12), transparent 28%),
         var(--bg);
-      color: var(--text);
+      color:var(--text);
     }
-
-    header {
-      background: linear-gradient(110deg, var(--brand) 0%, #1478c8 54%, #0f9ec8 100%);
-      color: white;
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-      position: sticky;
-      top: 0;
-      z-index: 9;
-      box-shadow: 0 3px 12px rgba(0, 34, 63, 0.22);
+    header{
+      background:linear-gradient(110deg, var(--brand) 0%, #1478c8 54%, #0f9ec8 100%);
+      color:#fff;
+      padding:1rem 2rem;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:1rem;
+      position:sticky; top:0; z-index:9;
+      box-shadow:0 3px 12px rgba(0,34,63,.22);
     }
-
-    header h1 {
-      margin: 0;
-      font-size: 1.5rem;
+    header h1{margin:0; font-size:1.5rem}
+    .header-right{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end}
+    .search-bar input{
+      padding:.55rem .8rem; font-size:1rem; border-radius:8px;
+      border:1px solid rgba(255,255,255,.55);
+      width:min(340px,42vw);
+      outline:none;
+      color:var(--text);
     }
-
-    .search-bar input {
-      padding: 0.55rem 0.8rem;
-      font-size: 1rem;
-      border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.55);
-      width: min(340px, 42vw);
-      outline: none;
-      color: var(--text);
+    .search-bar input:focus{box-shadow:0 0 0 3px rgba(255,255,255,.35)}
+    .theme-btn{
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,.65);
+      background:rgba(255,255,255,.14);
+      color:#fff;
+      padding:8px 10px;
+      border-radius:10px;
+      font-weight:700;
+      user-select:none;
+      white-space:nowrap;
     }
-    .search-bar input:focus {
-      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
+    .theme-btn:hover{background:rgba(255,255,255,.22)}
+    .container{display:flex; padding:1.5rem; gap:2rem; max-width:1400px; margin:0 auto}
+    .main-feed{
+      flex:3;
+      background:var(--surface);
+      padding:1rem 1.5rem;
+      border-radius:14px;
+      box-shadow:var(--shadow);
+      max-height:80vh;
+      overflow-y:auto;
+      border:1px solid var(--border);
     }
-
-    .container {
-      display: flex;
-      padding: 1.5rem;
-      gap: 2rem;
-      max-width: 1400px;
-      margin: 0 auto;
+    .sidebar{flex:1.6; display:flex; flex-direction:column; gap:1.5rem}
+    .section{
+      background:var(--surface);
+      padding:1rem 1.2rem;
+      border-radius:14px;
+      box-shadow:var(--shadow);
+      border:1px solid var(--border);
     }
-
-    .main-feed {
-      flex: 3;
-      background: var(--surface);
-      padding: 1rem 1.5rem;
-      border-radius: 14px;
-      box-shadow: var(--shadow);
-      max-height: 80vh;
-      overflow-y: auto;
+    h2{
+      margin-top:0;
+      font-size:1.2rem;
+      color:var(--brand);
+      border-bottom:2px solid rgba(15,94,168,.26);
+      margin-bottom:1rem;
     }
-    .sidebar {
-      flex: 1.6;
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
+    button{
+      cursor:pointer;
+      background:var(--brand);
+      border:none;
+      color:#fff;
+      padding:7px 12px;
+      border-radius:6px;
+      font-size:.9rem;
+      transition:background-color .2s;
+      user-select:none;
     }
-    .section {
-      background: var(--surface);
-      padding: 1rem 1.2rem;
-      border-radius: 14px;
-      box-shadow: var(--shadow);
+    button:hover{background:var(--brand-strong)}
+    button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{
+      outline:3px solid var(--ring); outline-offset:1px;
     }
-    h2 {
-      margin-top: 0;
-      font-size: 1.2rem;
-      color: var(--brand);
-      border-bottom: 2px solid rgba(15, 94, 168, 0.26);
-      margin-bottom: 1rem;
+    .btn-secondary{background:#6d839b}
+    .btn-secondary:hover{background:#556c86}
+    .btn-danger{background:var(--danger)}
+    .btn-danger:hover{filter:brightness(.9)}
+    .btn-warn{background:var(--warn)}
+    .btn-warn:hover{filter:brightness(.92)}
+    .actions{display:flex; gap:1rem; margin-bottom:1rem; flex-wrap:wrap; align-items:center}
+    .actions button{flex:1 1 140px; font-weight:600; min-width:120px}
+    .feed-tools{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px}
+    .feed-status{margin:0; color:var(--muted); font-size:.9rem; font-weight:600}
+    .pill{
+      border:1px solid rgba(15,94,168,.3);
+      background:rgba(246,251,255,.9);
+      color:var(--brand);
+      border-radius:999px;
+      padding:5px 10px;
+      font-size:.8rem;
+      font-weight:700;
+      user-select:none;
     }
-    button {
-      cursor: pointer;
-      background: var(--brand);
-      border: none;
-      color: white;
-      padding: 7px 12px;
-      border-radius: 6px;
-      font-size: 0.9rem;
-      transition: background-color 0.3s;
-      user-select: none;
+    html[data-theme="dark"] .pill{
+      background:rgba(10,25,40,.35);
+      border-color:rgba(0,188,235,.25);
+      color:#bfefff;
     }
-    button:hover {
-      background: var(--brand-strong);
+    .policy-banner{
+      margin:10px 0 14px;
+      border:1px solid rgba(0,0,0,.08);
+      background:rgba(255,255,255,.75);
+      padding:10px 12px;
+      border-radius:12px;
+      color:var(--text);
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
     }
-    button:focus-visible,
-    input:focus-visible,
-    textarea:focus-visible,
-    select:focus-visible {
-      outline: 3px solid var(--ring);
-      outline-offset: 1px;
+    html[data-theme="dark"] .policy-banner{
+      background:rgba(0,0,0,.18);
+      border-color:rgba(180,205,230,.18);
     }
-    .webex-btn {
-      background: var(--success);
-      color: white;
-      padding: 4px 12px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      border: none;
-      margin-left: 10px;
-      user-select: none;
-      white-space: nowrap;
+    .policy-banner strong{color:var(--brand-strong)}
+    .policy-banner .tiny{color:var(--muted); font-size:.85rem; font-weight:600}
+    .policy-banner button{padding:6px 10px; font-size:.85rem; border-radius:10px}
+    .post,.poll{margin-bottom:1.2rem; padding-bottom:8px; border-bottom:1px solid var(--divider)}
+    .post h3,.poll-question{margin:.2rem 0 .5rem; color:var(--brand-strong)}
+    .post time,.poll time{font-size:.85rem; color:var(--muted); margin-left:8px}
+    .post-tags span{
+      background:rgba(217,233,254,.9);
+      color:var(--brand-strong);
+      padding:2px 6px;
+      margin-right:6px;
+      border-radius:6px;
+      font-size:.8rem;
+      font-weight:600;
+      user-select:none;
     }
-    .webex-btn:hover {
-      background: #008930;
+    html[data-theme="dark"] .post-tags span{background:rgba(0,188,235,.18); color:#bfefff}
+    .poll-block{
+      background:rgba(236,244,254,.92);
+      padding:10px;
+      border-radius:8px;
+      margin-top:10px;
+      border:1px solid var(--border);
     }
-    .wish-btn {
-      background: #338034;
-      color: white;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      margin-left: 10px;
-      user-select: none;
-      white-space: nowrap;
+    html[data-theme="dark"] .poll-block{background:rgba(0,188,235,.08)}
+    .poll-results{color:var(--brand-strong); font-weight:600}
+    html[data-theme="dark"] .poll-results{color:#bfefff}
+    .poll-results span{margin-right:20px; font-size:.9rem}
+    .modal{
+      display:none;
+      position:fixed;
+      top:0; left:0;
+      width:100vw; height:100vh;
+      background:rgba(0,0,0,.35);
+      z-index:1000;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
     }
-    .wish-btn:hover {
-      background: #276628;
+    .modal.show{display:flex}
+    .modal-content{
+      background:var(--surface);
+      width:860px;
+      max-width:96vw;
+      padding:18px 18px;
+      border-radius:14px;
+      box-shadow:var(--shadow);
+      border:1px solid var(--border);
     }
-    .actions {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 1rem;
-      flex-wrap: wrap;
-      align-items: center;
+    .modal-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px}
+    .close-btn{
+      font-size:24px;
+      font-weight:900;
+      color:#999;
+      cursor:pointer;
+      background:transparent;
+      border:none;
+      padding:6px 10px;
+      border-radius:10px;
     }
-    .actions button {
-      flex: 1 1 140px;
-      font-weight: 600;
-      min-width: 120px;
+    .close-btn:hover{color:#666; background:rgba(0,0,0,.06)}
+    html[data-theme="dark"] .close-btn:hover{background:rgba(255,255,255,.08)}
+    .content-input{
+      width:100%;
+      padding:8px;
+      margin-bottom:8px;
+      border-radius:8px;
+      border:1px solid var(--border);
+      font:inherit;
+      background:transparent;
+      color:var(--text);
     }
-    .focus-mode .sidebar {
-      display: none;
+    .content-actions{display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap}
+    .post-image{
+      margin-top:10px;
+      max-width:min(560px,100%);
+      border-radius:12px;
+      box-shadow:0 6px 16px rgba(8,30,56,.18);
     }
-    .focus-mode .main-feed {
-      flex: 1 1 auto;
-      max-height: none;
+    .empty-state{color:var(--muted); font-weight:600; padding:8px 0}
+    .toast{
+      position:fixed;
+      right:16px;
+      bottom:16px;
+      background:#07325f;
+      color:#fff;
+      padding:10px 14px;
+      border-radius:10px;
+      box-shadow:var(--shadow);
+      opacity:0;
+      pointer-events:none;
+      transform:translateY(8px);
+      transition:opacity .2s ease, transform .2s ease;
+      z-index:1200;
     }
-    .focus-mode .container {
-      max-width: 980px;
+    .toast.show{opacity:1; transform:translateY(0)}
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .muted{color:var(--muted); font-weight:600}
+    .small{font-size:.9rem}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
+    .table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      overflow:hidden;
     }
-    .feed-tools {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 12px;
+    .table th,.table td{
+      padding:10px 10px;
+      border-bottom:1px solid var(--divider);
+      text-align:left;
+      vertical-align:top;
     }
-    .feed-status {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.9rem;
-      font-weight: 600;
+    .table th{background:rgba(15,94,168,.06); color:var(--brand-strong)}
+    html[data-theme="dark"] .table th{background:rgba(0,188,235,.08); color:#bfefff}
+    .badge{
+      display:inline-flex; align-items:center; gap:6px;
+      font-size:.8rem;
+      font-weight:800;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(0,0,0,.12);
+      background:rgba(255,255,255,.6);
+      color:var(--text);
     }
-    .pill {
-      border: 1px solid rgba(15, 94, 168, 0.3);
-      background: #f6fbff;
-      color: var(--brand);
-      border-radius: 999px;
-      padding: 5px 10px;
-      font-size: 0.8rem;
-      font-weight: 700;
+    html[data-theme="dark"] .badge{border-color:rgba(180,205,230,.18); background:rgba(0,0,0,.15)}
+    .badge-flagged{color:var(--warn); border-color:rgba(184,107,0,.35)}
+    .badge-removed{color:var(--danger); border-color:rgba(179,38,30,.35)}
+    .badge-active{color:var(--success); border-color:rgba(13,143,95,.35)}
+    .kbd{
+      font-family:inherit;
+      font-size:.82rem;
+      font-weight:800;
+      padding:2px 6px;
+      border-radius:6px;
+      border:1px solid rgba(0,0,0,.15);
+      background:rgba(255,255,255,.65);
+      color:var(--text);
     }
-    .video-call-banner {
-      margin-bottom: 12px;
-      border: 1px solid #cfe1f5;
-      background: #f5faff;
-      border-radius: 10px;
-      padding: 10px 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
+    html[data-theme="dark"] .kbd{border-color:rgba(180,205,230,.18); background:rgba(0,0,0,.18)}
+    @media (max-width:1000px){
+      .container{flex-direction:column; padding:1rem}
+      .main-feed{max-height:none}
+      .sidebar{gap:1rem}
     }
-    .video-call-banner strong {
-      color: var(--brand-strong);
-      display: block;
-      margin-bottom: 2px;
-    }
-    .video-call-actions {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    .video-call-actions button {
-      flex: 0 0 auto;
-      min-width: 96px;
-    }
-    .danger-btn {
-      background: #c84545;
-    }
-    .danger-btn:hover {
-      background: #ac3737;
-    }
-    .post,
-    .poll {
-      margin-bottom: 1.2rem;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #eee;
-    }
-
-    .post h3,
-    .poll-question {
-      margin: 0.2rem 0 0.5rem;
-      color: var(--brand-strong);
-    }
-    .post time,
-    .poll time {
-      font-size: 0.85rem;
-      color: #666;
-      margin-left: 8px;
-    }
-    .post-tags span {
-      background: #d9e9fe;
-      color: var(--brand-strong);
-      padding: 2px 6px;
-      margin-right: 6px;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      user-select: none;
-    }
-
-    .post-actions,
-    .poll-actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 6px;
-    }
-    button:hover {
-      filter: brightness(0.95);
-    }
-    .poll-block {
-      background: #ecf4fe;
-      padding: 10px;
-      border-radius: 8px;
-      margin-top: 10px;
-    }
-    .poll-options {
-      list-style-type: none;
-      padding: 0;
-      margin: 0 0 12px 0;
-      user-select: none;
-    }
-    .poll-options li {
-      margin: 5px 0;
-    }
-    .poll-results {
-      color: var(--brand-strong);
-      font-weight: 600;
-    }
-    .poll-results span {
-      margin-right: 20px;
-      font-size: 0.9rem;
-    }
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.3);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal.show {
-      display: flex;
-    }
-    .modal-content {
-      background: var(--surface);
-      width: 420px;
-      max-width: 90vw;
-      padding: 20px 24px;
-      border-radius: 12px;
-      box-shadow: var(--shadow);
-      position: relative;
-      user-select: none;
-    }
-    .video-preview-box {
-      border: 1px solid #c7d4e2;
-      border-radius: 10px;
-      background: #f7fbff;
-      padding: 10px;
-      color: #27415d;
-      font-size: 0.92rem;
-    }
-    .video-preview-state {
-      margin-top: 6px;
-      color: #46698d;
-      font-weight: 600;
-    }
-    .close-btn {
-      position: static;
-      font-size: 22px;
-      font-weight: bold;
-      color: #999;
-      cursor: pointer;
-      user-select: none;
-      margin-left: 30px;
-    }
-    .close-btn:hover {
-      color: #555;
-    }
-    .group-header-wrapper {
-      display: flex;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-    .group-header-wrapper .group-name {
-      cursor: pointer;
-      flex-grow: 1;
-      background: #eef6ff;
-      color: var(--brand-strong);
-      font-weight: 600;
-      padding: 8px 14px;
-      border-radius: 8px;
-      user-select: none;
-      transition: background-color 0.2s;
-    }
-    .group-header-wrapper .group-name:hover {
-      background: #d3e4ff;
-    }
-    .group-members {
-      margin-left: 24px;
-      border-left: 3px solid var(--brand);
-      padding-left: 12px;
-      color: #444;
-      user-select: none;
-    }
-    .empty-state {
-      color: var(--muted);
-      font-weight: 600;
-      padding: 8px 0;
-    }
-    .toast {
-      position: fixed;
-      right: 16px;
-      bottom: 16px;
-      background: #07325f;
-      color: #fff;
-      padding: 10px 14px;
-      border-radius: 10px;
-      box-shadow: var(--shadow);
-      opacity: 0;
-      pointer-events: none;
-      transform: translateY(8px);
-      transition: opacity 0.2s ease, transform 0.2s ease;
-      z-index: 1200;
-    }
-    .toast.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    .content-input {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 8px;
-      border-radius: 8px;
-      border: 1px solid #c7d4e2;
-      font: inherit;
-    }
-    .content-actions {
-      display: flex;
-      gap: 8px;
-      justify-content: flex-end;
-    }
-    .photo-preview-wrap {
-      margin-bottom: 10px;
-      min-height: 48px;
-      border: 1px dashed #b8cbde;
-      border-radius: 10px;
-      background: #f9fcff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 8px;
-      color: var(--muted);
-      font-size: 0.9rem;
-      font-weight: 600;
-    }
-    .photo-preview-wrap.dragover {
-      border-color: var(--brand);
-      background: #eaf5ff;
-      color: var(--brand);
-    }
-    .photo-preview {
-      max-width: 100%;
-      max-height: 260px;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
-      object-fit: cover;
-    }
-    .post-image {
-      margin-top: 10px;
-      max-width: min(560px, 100%);
-      border-radius: 12px;
-      box-shadow: 0 6px 16px rgba(8, 30, 56, 0.18);
-    }
-    @media (max-width: 1000px) {
-      .container {
-        flex-direction: column;
-        padding: 1rem;
-      }
-      .main-feed {
-        max-height: none;
-      }
-      .sidebar {
-        gap: 1rem;
-      }
-    }
-    @media (max-width: 680px) {
-      header {
-        padding: 0.8rem 1rem;
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .search-bar input {
-        width: 100%;
-      }
-      .actions button {
-        flex: 1 1 calc(50% - 8px);
-      }
+    @media (max-width:680px){
+      header{padding:.8rem 1rem; flex-direction:column; align-items:flex-start}
+      .header-right{width:100%; justify-content:space-between}
+      .search-bar input{width:100%}
+      .actions button{flex:1 1 calc(50% - 8px)}
+      .modal-content{padding:14px}
     }
   </style>
 </head>
 
 <body>
-  <header>
-    <h1>Cisco Social</h1>
+<header>
+  <h1>Cisco Social</h1>
+  <div class="header-right">
     <div class="search-bar">
       <input id="globalSearch" type="search" placeholder="Search posts, polls, people..." />
     </div>
-  </header>
-  <div class="container">
-    <main class="main-feed">
-      <div class="actions">
-        <button id="postsBtn">Posts</button>
-        <button id="groupsBtn">Groups</button>
-        <button id="photoUploadBtn">Upload Photo</button>
-        <button id="quickPollBtn">Quick Poll</button>
-        <button id="callBtn" aria-label="Make a Webex call">📞 Call</button>
-        <button id="videoCallBtn" aria-label="Start a Webex video call">🎥 Video Call</button>
-        <button id="focusModeBtn" aria-label="Toggle focus mode">Focus Mode: Off</button>
-        <button id="feedDigestBtn" aria-label="Summarize feed activity">Feed Activity Hub</button>
+    <button id="themeToggleBtn" class="theme-btn" aria-label="Toggle dark mode">🌙 Dark</button>
+  </div>
+</header>
+
+<div class="container">
+  <main class="main-feed">
+    <div class="policy-banner" id="policyBanner">
+      <div style="font-size:18px;">🛡️</div>
+      <div style="flex:1;">
+        <div><strong>Content policy:</strong> Be respectful. Don’t share confidential data, personal info, or harassment.</div>
+        <div class="tiny">Use <span class="kbd">🚩 Report</span> on a post if it violates policy. Moderators may remove content.</div>
       </div>
-      <div class="feed-tools">
-        <p id="feedStatus" class="feed-status">Showing all feed items</p>
-        <span id="feedCount" class="pill">0 items</span>
+      <button class="btn-secondary" id="dismissPolicyBtn">Dismiss</button>
+    </div>
+
+    <div class="actions">
+      <button id="postsBtn">Posts</button>
+      <button id="groupsBtn">Groups</button>
+      <button id="photoUploadBtn">Upload Photo</button>
+      <button id="quickPollBtn">Quick Poll</button>
+      <button id="dataToolsBtn">Data Tools</button>
+      <button id="moderationBtn">Moderation</button>
+    </div>
+
+    <div class="feed-tools">
+      <p id="feedStatus" class="feed-status">Showing all feed items</p>
+      <span id="feedCount" class="pill">0 items</span>
+    </div>
+
+    <div id="postsContainer"></div>
+
+    <div id="postCreation" style="display:none; margin-top:1rem;">
+      <h3>Create Post</h3>
+      <input id="postTitle" class="content-input" type="text" placeholder="Title" />
+      <textarea id="postContent" class="content-input" placeholder="What's on your mind?" style="height:90px"></textarea>
+      <input id="postTags" class="content-input" type="text" placeholder="Tags (comma separated)" />
+      <select id="postBU" multiple class="content-input">
+        <option value="All">All</option>
+        <option value="Marketing">Marketing</option>
+        <option value="Engineering">Engineering</option>
+        <option value="Sales">Sales</option>
+        <option value="HR">HR</option>
+      </select>
+      <div class="content-actions">
+        <button id="postCancel" class="btn-secondary">Cancel</button>
+        <button id="postSubmit">Post</button>
       </div>
-      <div class="video-call-banner">
+    </div>
+
+    <div id="pollCreation" style="display:none; margin-top:1rem;">
+      <h3>Create Quick Poll</h3>
+      <input id="pollQuestion" class="content-input" placeholder="Poll question" />
+      <textarea id="pollOptions" class="content-input" placeholder="One option per line" style="height:90px"></textarea>
+      <select id="pollBU" multiple class="content-input">
+        <option value="All">All</option>
+        <option value="Marketing">Marketing</option>
+        <option value="Engineering">Engineering</option>
+        <option value="Sales">Sales</option>
+        <option value="HR">HR</option>
+      </select>
+      <div class="content-actions">
+        <button id="pollCancel" class="btn-secondary">Cancel</button>
+        <button id="pollSubmit">Post</button>
+      </div>
+    </div>
+
+    <div id="photoCreation" style="display:none; margin-top:1rem;">
+      <h3>Upload Photo</h3>
+      <input id="photoTitle" class="content-input" type="text" placeholder="Photo title" />
+      <textarea id="photoCaption" class="content-input" placeholder="Add a caption (optional)" style="height:90px"></textarea>
+      <input id="photoFile" class="content-input" type="file" accept="image/*" />
+      <div id="photoPreviewWrap" class="content-input" style="border-style:dashed; text-align:center; padding:14px;">
+        No photo selected. Drag and drop an image here.
+      </div>
+      <select id="photoBU" multiple class="content-input">
+        <option value="All">All</option>
+        <option value="Marketing">Marketing</option>
+        <option value="Engineering">Engineering</option>
+        <option value="Sales">Sales</option>
+        <option value="HR">HR</option>
+      </select>
+      <div class="content-actions">
+        <button id="photoCancel" class="btn-secondary">Cancel</button>
+        <button id="photoSubmit">Upload</button>
+      </div>
+    </div>
+  </main>
+
+  <aside class="sidebar">
+    <section class="section">
+      <h2>Upcoming Events</h2>
+      <div>Wellness Webinar - Aug 25 <button>RSVP</button></div>
+      <div>Team Coffee Chat - Aug 22 <button>RSVP</button></div>
+      <div>Cisco Content Expo - March 2026 <button>RSVP</button></div>
+    </section>
+
+    <section class="section">
+      <h2>Job Opportunities</h2>
+      <div>Data Scientist - New York <button>Apply</button></div>
+      <div>UX Designer - Remote <button>Apply</button></div>
+      <div>Cloud Engineer - San Francisco <button>Apply</button></div>
+    </section>
+
+    <section class="section">
+      <h2>Notifications</h2>
+      <div>New message from Sarah J.</div>
+      <div>You received a badge from Raj P.</div>
+      <div>Project deadline updated</div>
+    </section>
+  </aside>
+</div>
+
+<!-- Groups Modal (kept simple) -->
+<div id="groupsModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-head">
+      <div class="row">
+        <h2 style="margin:0;">Groups</h2>
+      </div>
+      <button id="groupsModalClose" class="close-btn" aria-label="Close groups">&times;</button>
+    </div>
+    <div id="groupsContainer"></div>
+  </div>
+</div>
+
+<!-- Data Tools Modal (Export/Import) -->
+<div id="dataModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-head">
+      <div>
+        <h2 style="margin:0;">Data Tools</h2>
+        <div class="muted small">Export / Import your feed, groups, and moderation state.</div>
+      </div>
+      <button id="dataCloseBtn" class="close-btn" aria-label="Close data tools">&times;</button>
+    </div>
+
+    <div class="row" style="justify-content:space-between; margin-top:10px;">
+      <div>
+        <div class="muted small">Format:</div>
+        <div class="mono" id="exportFormatHint">cisco_social_export_v1</div>
+      </div>
+      <div class="row">
+        <button id="exportBtn">⬇️ Export JSON</button>
+        <button id="importBtn" class="btn-secondary">⬆️ Import JSON</button>
+        <input id="importFile" type="file" accept="application/json" style="display:none" />
+      </div>
+    </div>
+
+    <hr style="border:none; border-top:1px solid var(--divider); margin:14px 0;" />
+
+    <div class="row" style="justify-content:space-between;">
+      <div>
+        <div class="muted small">Import mode:</div>
+        <div class="row">
+          <label class="row small" style="gap:8px;">
+            <input type="radio" name="importMode" value="merge" checked />
+            Merge (recommended)
+          </label>
+          <label class="row small" style="gap:8px;">
+            <input type="radio" name="importMode" value="replace" />
+            Replace everything
+          </label>
+        </div>
+      </div>
+      <button id="resetLocalBtn" class="btn-danger">Reset Local Data</button>
+    </div>
+
+    <div class="muted small" style="margin-top:10px;">
+      Tip: export regularly before large changes.
+    </div>
+  </div>
+</div>
+
+<!-- Moderation Modal -->
+<div id="moderationModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-head">
+      <div>
+        <h2 style="margin:0;">Moderation Queue</h2>
+        <div class="muted small">Review reported content. Approve to restore; remove to hide from the feed.</div>
+      </div>
+      <button id="moderationCloseBtn" class="close-btn" aria-label="Close moderation">&times;</button>
+    </div>
+
+    <div class="row" style="justify-content:space-between;">
+      <div class="row">
+        <span class="badge badge-flagged">🚩 Flagged</span>
+        <span class="badge badge-removed">🗑 Removed</span>
+        <span class="badge badge-active">✅ Active</span>
+      </div>
+      <div class="row">
+        <label class="row small" style="gap:8px;">
+          <input id="showRemovedToggle" type="checkbox" />
+          Show removed items
+        </label>
+      </div>
+    </div>
+
+    <table class="table" aria-label="Moderation queue table">
+      <thead>
+        <tr>
+          <th style="width:120px;">Status</th>
+          <th>Item</th>
+          <th style="width:220px;">Reported</th>
+          <th style="width:220px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="moderationTableBody"></tbody>
+    </table>
+
+    <div class="muted small" style="margin-top:10px;">
+      Note: This is a local-only moderation workflow for the demo UI. For production, connect to a backend + RBAC.
+    </div>
+  </div>
+</div>
+
+<script>
+/**
+ * OPTION C IMPLEMENTATION:
+ * - Export / Import JSON (versioned)
+ * - Moderation workflow: report -> flagged -> approve/remove
+ * - Policy banner
+ * - Persistence in localStorage
+ */
+
+const STORAGE_KEY = 'cisco_social_state_v2';
+const THEME_KEY   = 'cisco_social_theme_v1';
+const POLICY_KEY  = 'cisco_social_policy_dismissed_v1';
+const EXPORT_FORMAT = 'cisco_social_export_v1';
+
+function safeJsonParse(text, fallback) { try { return JSON.parse(text); } catch { return fallback; } }
+function nowIso() { return new Date().toISOString(); }
+function formatDate(d = new Date()) { return d.toISOString().slice(0,10); }
+function uid(prefix='id') { return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`; }
+function sanitize(str){
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+let toastTimer;
+
+function showToast(message) {
+  let toast = document.getElementById('appToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'appToast';
+    toast.className = 'toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+/* -----------------------
+   THEME
+----------------------- */
+function loadTheme(){
+  const t = localStorage.getItem(THEME_KEY) || 'light';
+  document.documentElement.setAttribute('data-theme', t);
+  updateThemeToggleLabel();
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme') || 'light';
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem(THEME_KEY, next);
+  updateThemeToggleLabel();
+  showToast(next === 'dark' ? 'Dark mode enabled.' : 'Light mode enabled.');
+}
+function updateThemeToggleLabel(){
+  const cur = document.documentElement.getAttribute('data-theme') || 'light';
+  const btn = document.getElementById('themeToggleBtn');
+  btn.textContent = cur === 'dark' ? '☀️ Light' : '🌙 Dark';
+  btn.setAttribute('aria-label', cur === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+}
+
+/* -----------------------
+   DATA MODEL (local-only)
+----------------------- */
+
+const employees = [
+  { name: 'Emma L.', skills: ['Marketing','AI'] },
+  { name: 'Raj S.', skills: ['Engineering','Machine Learning'] },
+  { name: 'Sara P.', skills: ['HR'] },
+  { name: 'David K.', skills: ['Engineering','AI'] },
+  { name: 'Alice R.', skills: ['UX Design','AI'] },
+  { name: 'John M.', skills: ['Marketing'] }
+];
+
+let groups = [
+  { id: uid('grp'), name: "AI Engineers", members: ["Raj S.","David K."], webex: "https://webex.com/meet/ai-engineers" },
+  { id: uid('grp'), name: "UX Designers", members: ["Alice R."], webex: "https://webex.com/meet/ux-designers" }
+];
+
+/**
+ * Feed item structure (post/poll)
+ * {
+ *   id, type, author, date,
+ *   ...content fields...
+ *   moderation: { status: 'active'|'flagged'|'removed', flags: [ {by, reason, at} ] }
+ * }
+ */
+let posts = [
+  {
+    id: uid('post'),
+    type: 'post',
+    author: 'Lisa T.',
+    date: '2025-08-20',
+    title: 'Great teamwork on Q3 launch',
+    content: 'Shoutout to team!',
+    tags: ['#Q3','#Success'],
+    bu: ['All'],
+    moderation: { status: 'active', flags: [] }
+  },
+  {
+    id: uid('poll'),
+    type: 'poll',
+    author: 'HR Team',
+    date: '2025-08-18',
+    question: 'Do you like the new WFH policy?',
+    options: ['Yes','No','Not Sure'],
+    votes: [12,5,3],
+    voters: {},
+    bu: ['All'],
+    moderation: { status: 'active', flags: [] }
+  }
+];
+
+let activeQuery = '';
+
+/* -----------------------
+   PERSISTENCE
+----------------------- */
+function saveState(){
+  const state = { version: 2, posts, groups };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+function loadState(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+  const state = safeJsonParse(raw, null);
+  if (!state) return;
+
+  // Minimal migration support
+  if (Array.isArray(state.posts)) posts = state.posts.map(ensureModerationFields);
+  if (Array.isArray(state.groups)) groups = state.groups;
+
+  // If older v1 exists somewhere else, you can optionally add migration here.
+}
+function ensureModerationFields(item){
+  if (!item || typeof item !== 'object') return item;
+  if (!item.id) item.id = uid(item.type || 'item');
+  if (!item.moderation) item.moderation = { status:'active', flags:[] };
+  if (!item.moderation.status) item.moderation.status = 'active';
+  if (!Array.isArray(item.moderation.flags)) item.moderation.flags = [];
+  return item;
+}
+
+/* -----------------------
+   POLICY BANNER
+----------------------- */
+function loadPolicyBanner(){
+  const dismissed = localStorage.getItem(POLICY_KEY) === '1';
+  document.getElementById('policyBanner').style.display = dismissed ? 'none' : 'flex';
+}
+document.getElementById('dismissPolicyBtn').onclick = () => {
+  localStorage.setItem(POLICY_KEY,'1');
+  document.getElementById('policyBanner').style.display = 'none';
+};
+
+/* -----------------------
+   UI ELEMENTS
+----------------------- */
+const postsContainer = document.getElementById('postsContainer');
+const postCreation   = document.getElementById('postCreation');
+const pollCreation   = document.getElementById('pollCreation');
+const photoCreation  = document.getElementById('photoCreation');
+const groupsModal    = document.getElementById('groupsModal');
+const groupsContainer= document.getElementById('groupsContainer');
+
+const dataModal      = document.getElementById('dataModal');
+const moderationModal= document.getElementById('moderationModal');
+const moderationTableBody = document.getElementById('moderationTableBody');
+
+const feedStatus     = document.getElementById('feedStatus');
+const feedCount      = document.getElementById('feedCount');
+
+function hideForms(){
+  postCreation.style.display='none';
+  pollCreation.style.display='none';
+  photoCreation.style.display='none';
+}
+
+/* -----------------------
+   TOOLBAR HANDLERS
+----------------------- */
+document.getElementById('postsBtn').onclick = () => { hideOverlays(); hideForms(); postCreation.style.display='block'; };
+document.getElementById('quickPollBtn').onclick = () => { hideOverlays(); hideForms(); pollCreation.style.display='block'; };
+document.getElementById('photoUploadBtn').onclick = () => { hideOverlays(); hideForms(); photoCreation.style.display='block'; };
+document.getElementById('groupsBtn').onclick = () => { hideOverlays(); hideForms(); openGroups(); };
+document.getElementById('dataToolsBtn').onclick = () => { hideOverlays(); hideForms(); openDataTools(); };
+document.getElementById('moderationBtn').onclick = () => { hideOverlays(); hideForms(); openModeration(); };
+document.getElementById('themeToggleBtn').onclick = toggleTheme;
+
+function hideOverlays(){
+  groupsModal.classList.remove('show');
+  dataModal.classList.remove('show');
+  moderationModal.classList.remove('show');
+}
+
+function openGroups(){
+  groupsContainer.innerHTML = '';
+  groups.forEach(g => {
+    const div = document.createElement('div');
+    div.style.marginBottom = '12px';
+    div.innerHTML = `
+      <div class="row" style="justify-content:space-between;">
         <div>
-          <strong>Active Video Call</strong>
-          <div id="videoCallBannerStatus" class="feed-status">No active video call.</div>
+          <div style="font-weight:900; color:var(--brand-strong);">${sanitize(g.name)}</div>
+          <div class="muted small">${sanitize((g.members||[]).join(', '))}</div>
         </div>
-        <div class="video-call-actions">
-          <button id="videoInstantBtn">Start instant room</button>
-          <button id="videoJoinBtn" style="display:none;">Join</button>
-          <button id="videoEndBtn" class="danger-btn" style="display:none;">End</button>
-        </div>
-      </div>
-      <div id="postsContainer"></div>
-      <div id="postCreation" style="display: none; margin-top: 1rem;">
-        <h3>Create Post</h3>
-        <input id="postTitle" class="content-input" type="text" placeholder="Title" />
-        <textarea id="postContent" class="content-input" placeholder="What's on your mind?" style="height: 90px"></textarea>
-        <input id="postTags" class="content-input" type="text" placeholder="Tags (comma separated)" />
-        <select id="postBU" multiple class="content-input">
-          <option value="All">All</option>
-          <option value="Marketing">Marketing</option>
-          <option value="Engineering">Engineering</option>
-          <option value="Sales">Sales</option>
-          <option value="HR">HR</option>
-        </select>
-        <div class="content-actions">
-          <button id="postCancel" style="background:#7b8da2;">Cancel</button>
-          <button id="postSubmit">Post</button>
-        </div>
-      </div>
-      <div id="pollCreation" style="display: none; margin-top: 1rem;">
-        <h3>Create Quick Poll</h3>
-        <input id="pollQuestion" class="content-input" placeholder="Poll question" />
-        <textarea id="pollOptions" class="content-input" placeholder="One option per line" style="height: 90px"></textarea>
-        <select id="pollBU" multiple class="content-input">
-          <option value="All">All</option>
-          <option value="Marketing">Marketing</option>
-          <option value="Engineering">Engineering</option>
-          <option value="Sales">Sales</option>
-          <option value="HR">HR</option>
-        </select>
-        <div class="content-actions">
-          <button id="pollCancel" style="background:#7b8da2;">Cancel</button>
-          <button id="pollSubmit">Post</button>
-        </div>
-      </div>
-      <div id="photoCreation" style="display: none; margin-top: 1rem;">
-        <h3>Upload Photo</h3>
-        <input id="photoTitle" class="content-input" type="text" placeholder="Photo title" />
-        <textarea id="photoCaption" class="content-input" placeholder="Add a caption (optional)" style="height: 90px"></textarea>
-        <input id="photoFile" class="content-input" type="file" accept="image/*" />
-        <div id="photoPreviewWrap" class="photo-preview-wrap">No photo selected. Drag and drop an image here.</div>
-        <select id="photoBU" multiple class="content-input">
-          <option value="All">All</option>
-          <option value="Marketing">Marketing</option>
-          <option value="Engineering">Engineering</option>
-          <option value="Sales">Sales</option>
-          <option value="HR">HR</option>
-        </select>
-        <div class="content-actions">
-          <button id="photoCancel" style="background:#7b8da2;">Cancel</button>
-          <button id="photoSubmit">Upload</button>
-        </div>
-      </div>
-    </main>
-    <aside class="sidebar">
-      <section class="section">
-        <h2>Upcoming Events</h2>
-        <div>Wellness Webinar - Aug 25 <button>RSVP</button></div>
-        <div>Team Coffee Chat - Aug 22 <button>RSVP</button></div>
-        <div>Cisco Content Expo - March 2026 <button>RSVP</button></div>
-      </section>
-      <section class="section">
-        <h2>Job Opportunities</h2>
-        <div>Data Scientist - New York <button>Apply</button></div>
-        <div>UX Designer - Remote <button>Apply</button></div>
-        <div>Cloud Engineer - San Francisco <button>Apply</button></div>
-      </section>
-      <section class="section">
-        <h2>New Hires</h2>
-        <div class="new-hire">
-          Emma L. (Marketing) <button class="wish-btn" onclick="wishGoodLuck('Emma L.')">Wish</button>
-        </div>
-        <div class="new-hire">
-          Raj S. (Engineering) <button class="wish-btn" onclick="wishGoodLuck('Raj S.')">Wish</button>
-        </div>
-        <div class="new-hire">
-          Sara P. (HR) <button class="wish-btn" onclick="wishGoodLuck('Sara P.')">Wish</button>
-        </div>
-      </section>
-      <section class="section">
-        <h2>Work Anniversaries</h2>
-        <div>John M. - 5 Years</div>
-        <div>Alice R. - 3 Years</div>
-        <div>David K. - 1 Year</div>
-      </section>
-      <section class="section">
-        <h2>Notifications & Alerts</h2>
-        <div>New message from Sarah J.</div>
-        <div>You received a badge from Raj P.</div>
-        <div>Project deadline updated</div>
-      </section>
-    </aside>
-  </div>
-  <!-- Groups Modal with "New" button aligned and spaced to the right of heading -->
-  <div id="groupsModal" class="modal">
-    <div class="modal-content">
-      <div style="display: flex; align-items: center; justify-content: space-between;">
-        <div style="display: flex; align-items: center;">
-          <h2 style="margin: 0;">Groups</h2>
-          <button id="groupsNewBtn" style="margin-left: 24px; font-size: 1rem; padding: 7px 18px;">New</button>
-        </div>
-        <button id="groupsModalClose" class="close-btn" style="margin-left: 35px;">&times;</button>
-      </div>
-      <div id="groupsContainer" style="margin-top: 1.1rem;"></div>
-      <div id="groupCreationForm" style="display:none; margin-top: 1rem;">
-        <input id="groupNameInput" type="text" placeholder="Group Name" style="width: 100%; padding: 8px; margin-bottom: 8px" />
-        <textarea id="groupCriteriaInput" placeholder="Criteria (skills, departments)" style="width: 100%; padding: 8px; margin-bottom: 8px; height: 80px"></textarea>
-        <button id="groupCreateSubmitBtn">Create Group</button>
-      </div>
-    </div>
-  </div>
-  <!-- Shout Out Modal -->
-  <!-- Call Modal -->
-  <div id="callModal" class="modal">
-    <div class="modal-content">
-      <div style="display:flex; align-items:center; justify-content: space-between; margin-bottom: 8px;">
-        <h2 style="margin:0;">Make a Webex Call</h2>
-        <button id="callCloseBtn" class="close-btn" aria-label="Close call form">&times;</button>
-      </div>
-      <div style="display:flex; flex-direction:column; gap:10px;">
-        <input id="callCountry" type="text" placeholder="Country code (e.g., +1)" style="width: 100%; padding: 8px;" />
-        <input id="callNumber" type="tel" placeholder="Mobile number" style="width: 100%; padding: 8px;" />
-        <div style="display:flex; gap:10px; justify-content:flex-end;">
-          <button id="callCancelBtn" style="background:#888;">Cancel</button>
-          <button id="callStartBtn">Call</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- Video Call Modal -->
-  <div id="videoCallModal" class="modal">
-    <div class="modal-content">
-      <div style="display:flex; align-items:center; justify-content: space-between; margin-bottom: 8px;">
-        <h2 style="margin:0;">Start a Video Call</h2>
-        <button id="videoCallCloseBtn" class="close-btn" aria-label="Close video call form">&times;</button>
-      </div>
-      <div style="display:flex; flex-direction:column; gap:10px;">
-        <input id="videoTopic" type="text" placeholder="Video meeting topic" style="width: 100%; padding: 8px;" />
-        <input id="videoParticipant" type="email" placeholder="Participant email address" style="width: 100%; padding: 8px;" />
-        <label style="display:flex; align-items:center; gap:8px;">
-          <input id="videoCameraToggle" type="checkbox" checked />
-          Camera on at start
-        </label>
-        <label style="display:flex; align-items:center; gap:8px;">
-          <input id="videoMicToggle" type="checkbox" checked />
-          Microphone on at start
-        </label>
-        <div class="video-preview-box">
-          <div><strong>Preview:</strong> You are ready to join as <span id="videoPreviewName">Host</span></div>
-          <div id="videoPreviewState" class="video-preview-state">Camera: On | Mic: On</div>
-        </div>
-        <div style="display:flex; gap:10px; justify-content:flex-end;">
-          <button id="videoCallCancelBtn" style="background:#888;">Cancel</button>
-          <button id="videoCallStartBtn">Start Webex Video Call</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <script>
-    // DATA
-    const employees = [
-      { name: 'Emma L.', skills: ['Marketing', 'AI'] },
-      { name: 'Raj S.', skills: ['Engineering', 'Machine Learning'] },
-      { name: 'Sara P.', skills: ['HR'] },
-      { name: 'David K.', skills: ['Engineering', 'AI'] },
-      { name: 'Alice R.', skills: ['UX Design', 'AI'] },
-      { name: 'John M.', skills: ['Marketing'] },
-      { name: 'Priya S.', skills: ['AI', 'Engineering'] },
-      { name: 'Chris W.', skills: ['UX Design', 'Machine Learning'] },
-      { name: 'Megan G.', skills: ['Engineering', 'AI'] },
-      { name: 'Luis Q.', skills: ['Engineering', 'AI', 'UX Design'] },
-      { name: 'Brian Z.', skills: ['Machine Learning', 'Engineering'] },
-      { name: 'Mei T.', skills: ['AI', 'UX Design'] },
-      { name: 'Anil R.', skills: ['Marketing', 'Engineering'] }
-    ];
+        <button onclick="window.open('${sanitize(g.webex)}','_blank')">Meet</button>
+      </div>`;
+    groupsContainer.appendChild(div);
+  });
+  groupsModal.classList.add('show');
+}
 
-    let groups = [
-      // CHANGED "Marketers" group to "Python Group" and set Webex link
-      { name: "AI Engineers", criteria: ["ai", "machine learning", "engineering"], members: ["Raj S.", "David K.", "Priya S.", "Megan G.", "Brian Z."], webex: "https://webex.com/meet/ai-engineers" },
-      { name: "UX Designers", criteria: ["ux design"], members: ["Alice R.", "Chris W.", "Luis Q.", "Mei T."], webex: "https://webex.com/meet/ux-designers" },
-      { name: "Python Group", criteria: ["marketing"], members: ["Emma L.", "John M.", "Anil R.", "Sara P."], webex: "https://cisco.webex.com/meet/gisankar" }, // <-- changed
-      { name: "ML Innovators", criteria: ["machine learning"], members: ["Raj S.", "Chris W.", "Brian Z.", "Priya S."], webex: "https://webex.com/meet/ml-innovators" }
-    ];
+document.getElementById('groupsModalClose').onclick = () => groupsModal.classList.remove('show');
 
-    let posts = [
-      { type: 'post', author: 'Lisa T.', date: '2025-08-20', title: 'Great teamwork on Q3 launch', content: 'Shoutout to team!', tags: ['#Q3', '#Success'], bu: ['All'] },
-      { type: 'poll', author: 'HR Team', date: '2025-08-18', question: 'Do you like the new WFH policy?', options: ['Yes', 'No', 'Not Sure'], votes: [12, 5, 3], voters: {}, bu: ['All'] }
-    ];
-    let activeQuery = '';
-    let toastTimer;
+/* -----------------------
+   DATA TOOLS: Export / Import
+----------------------- */
+function openDataTools(){
+  document.getElementById('exportFormatHint').textContent = EXPORT_FORMAT;
+  dataModal.classList.add('show');
+}
+document.getElementById('dataCloseBtn').onclick = () => dataModal.classList.remove('show');
 
-    const postsContainer = document.getElementById('postsContainer');
-    const postCreation = document.getElementById('postCreation');
-    const pollCreation = document.getElementById('pollCreation');
-    const photoCreation = document.getElementById('photoCreation');
-    const groupsModal = document.getElementById('groupsModal');
-    const groupCreationForm = document.getElementById('groupCreationForm');
-    const groupsContainer = document.getElementById('groupsContainer');
-    const callModal = document.getElementById('callModal');
-    const videoCallModal = document.getElementById('videoCallModal');
-    const feedStatus = document.getElementById('feedStatus');
-    const feedCount = document.getElementById('feedCount');
-    const videoCallBannerStatus = document.getElementById('videoCallBannerStatus');
-    const videoJoinBtn = document.getElementById('videoJoinBtn');
-    const videoEndBtn = document.getElementById('videoEndBtn');
-    const focusModeBtn = document.getElementById('focusModeBtn');
-    const feedDigestBtn = document.getElementById('feedDigestBtn');
-    let activeVideoCallUrl = '';
-    let isFocusMode = false;
-
-    function hideForms() {
-      postCreation.style.display = 'none';
-      pollCreation.style.display = 'none';
-      photoCreation.style.display = 'none';
-      groupsModal.style.display = 'none';
-      groupCreationForm.style.display = 'none';
-      groupsContainer.innerHTML = '';
-      closeCall();
-      closeVideoCall();
+document.getElementById('exportBtn').onclick = () => {
+  const payload = {
+    format: EXPORT_FORMAT,
+    exported_at: nowIso(),
+    app_version: 2,
+    data: {
+      posts: posts.map(ensureModerationFields),
+      groups
     }
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `cisco_social_export_${formatDate()}_v1.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast('Exported JSON.');
+};
 
-    // Toolbar event listeners
-    document.getElementById('postsBtn').onclick = () => {
-      hideForms();
-      postCreation.style.display = 'block';
-    };
-    document.getElementById('quickPollBtn').onclick = () => {
-      hideForms();
-      pollCreation.style.display = 'block';
-    };
-    document.getElementById('photoUploadBtn').onclick = () => {
-      hideForms();
-      photoCreation.style.display = 'block';
-    };
-   
-    document.getElementById('groupsBtn').onclick = () => {
-      hideForms();
-      groupsModal.style.display = 'flex';
-      showGroups();
-    };
-    document.getElementById('callBtn').onclick = () => {
-      hideForms();
-      callModal.classList.add('show');
-      document.getElementById('callCountry').focus();
-    };
-    document.getElementById('videoCallBtn').onclick = () => {
-      hideForms();
-      videoCallModal.classList.add('show');
-      document.getElementById('videoTopic').focus();
-      updateVideoPreview();
-    };
-    document.getElementById('videoInstantBtn').onclick = () => {
-      hideForms();
-      document.getElementById('videoTopic').value = 'Instant Team Room';
-      document.getElementById('videoParticipant').value = 'team@cisco.com';
-      document.getElementById('videoCameraToggle').checked = true;
-      document.getElementById('videoMicToggle').checked = true;
-      updateVideoPreview();
-      videoCallModal.classList.add('show');
-      document.getElementById('videoTopic').focus();
-    };
-    focusModeBtn.onclick = () => {
-      isFocusMode = !isFocusMode;
-      document.body.classList.toggle('focus-mode', isFocusMode);
-      focusModeBtn.textContent = `Focus Mode: ${isFocusMode ? 'On' : 'Off'}`;
-      showToast(isFocusMode ? 'Focus Mode enabled.' : 'Focus Mode disabled.');
-    };
-    feedDigestBtn.onclick = () => {
-      const postCount = posts.filter(p => p.type === 'post').length;
-      const pollCount = posts.filter(p => p.type === 'poll').length;
-      showToast(`Digest: ${postCount} posts and ${pollCount} polls in your feed.`);
-    };
-    // Groups modal logic
-    document.getElementById('groupsModalClose').onclick = () => {
-      groupsModal.style.display = 'none';
-      groupCreationForm.style.display = 'none';
-      groupsContainer.innerHTML = '';
-    };
-    document.getElementById('groupsNewBtn').onclick = () => {
-      groupsContainer.innerHTML = '';
-      groupCreationForm.style.display = 'block';
-    };
-    window.onclick = function (e) {
-      if (e.target === groupsModal) {
-        groupsModal.style.display = 'none';
-        groupCreationForm.style.display = 'none';
-        groupsContainer.innerHTML = '';
-      }
-      if (e.target === callModal) {
-        closeCall();
-      }
-      if (e.target === videoCallModal) {
-        closeVideoCall();
-      }
-    };
+document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
 
-    document.getElementById('groupCreateSubmitBtn').onclick = () => {
-      const name = document.getElementById('groupNameInput').value.trim();
-      const criteriaText = document.getElementById('groupCriteriaInput').value.trim();
-      if (!name || !criteriaText) {
-        alert('Please fill both Group Name and Criteria.');
-        return;
-      }
-      const criteria = criteriaText.split(',').map(c => c.trim().toLowerCase());
-      const members = employees.filter(e => e.skills.some(s => criteria.includes(s.toLowerCase()))).map(e => e.name);
-      // If creating "Python Group", always use the special Cisco Webex link
-      const url = name.toLowerCase() === 'python group'
-        ? 'https://cisco.webex.com/meet/gisankar'
-        : `https://webex.com/meet/${encodeURIComponent(name.toLowerCase().replace(/\s+/g, '-'))}`;
-      groups.push({ name, criteria, members, webex: url });
-      groupCreationForm.style.display = 'none';
-      document.getElementById('groupNameInput').value = '';
-      document.getElementById('groupCriteriaInput').value = '';
-      showGroups();
-      showToast(`Group "${name}" created (${members.length} members).`);
-    };
+document.getElementById('importFile').addEventListener('change', async (e) => {
+  const file = e.target.files?.[0];
+  e.target.value = ''; // reset
+  if (!file) return;
 
-    // Call form handlers
-    document.getElementById('callCloseBtn').onclick = closeCall;
-    document.getElementById('callCancelBtn').onclick = closeCall;
-    document.getElementById('callStartBtn').onclick = () => {
-      const cc = document.getElementById('callCountry').value.trim();
-      const num = document.getElementById('callNumber').value.trim();
-      if (!cc || !num) {
-        showToast('Please enter both country code and mobile number.');
-        return;
-      }
-      if (!/^\+\d{1,3}$/.test(cc) || !/^\d{6,15}$/.test(num.replace(/\s+/g, ''))) {
-        showToast('Enter country code like +1 and a valid phone number.');
-        return;
-      }
-      showToast(`Starting Webex call to ${cc} ${num}...`);
-      closeCall();
-    };
-    // Video Call handlers
-    document.getElementById('videoCallCloseBtn').onclick = closeVideoCall;
-    document.getElementById('videoCallCancelBtn').onclick = closeVideoCall;
-    document.getElementById('videoCameraToggle').onchange = updateVideoPreview;
-    document.getElementById('videoMicToggle').onchange = updateVideoPreview;
-    document.getElementById('videoTopic').oninput = updateVideoPreview;
-    document.getElementById('videoCallStartBtn').onclick = () => {
-      const topic = document.getElementById('videoTopic').value.trim();
-      const participant = document.getElementById('videoParticipant').value.trim();
-      if (!topic || !participant) {
-        showToast('Please enter a meeting topic and participant email.');
-        return;
-      }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(participant)) {
-        showToast('Enter a valid participant email.');
-        return;
-      }
-      const cameraOn = document.getElementById('videoCameraToggle').checked;
-      const micOn = document.getElementById('videoMicToggle').checked;
-      const webexUrl = `https://cisco.webex.com/meet/gisankar?topic=${encodeURIComponent(topic)}&cam=${cameraOn ? 'on' : 'off'}&mic=${micOn ? 'on' : 'off'}`;
-      window.open(webexUrl, '_blank');
-      showToast(`Video call started for "${topic}" with ${participant}.`);
-      setActiveVideoCall(topic, participant, webexUrl);
-      closeVideoCall();
-    };
-    videoJoinBtn.onclick = () => {
-      if (activeVideoCallUrl) window.open(activeVideoCallUrl, '_blank');
-    };
-    videoEndBtn.onclick = () => {
-      clearActiveVideoCall();
-      showToast('Video call ended.');
-    };
+  const text = await file.text();
+  const payload = safeJsonParse(text, null);
+  if (!payload || payload.format !== EXPORT_FORMAT || !payload.data) {
+    showToast('Invalid export file (format mismatch).');
+    return;
+  }
 
-    function showGroups() {
-      groupsContainer.innerHTML = '';
-      groups.forEach((g, idx) => {
-        const div = document.createElement('div');
-        div.style.marginBottom = '12px';
+  const incomingPosts  = Array.isArray(payload.data.posts) ? payload.data.posts.map(ensureModerationFields) : null;
+  const incomingGroups = Array.isArray(payload.data.groups) ? payload.data.groups : null;
 
-        const header = document.createElement('div');
-        header.className = 'group-header-wrapper';
+  if (!incomingPosts || !incomingGroups) {
+    showToast('Invalid export file (missing posts/groups).');
+    return;
+  }
 
-        const nameDiv = document.createElement('div');
-        nameDiv.className = 'group-name';
-        nameDiv.textContent = g.name;
-        nameDiv.onclick = () => showMembers(idx);
+  const mode = document.querySelector('input[name="importMode"]:checked')?.value || 'merge';
 
-        const meetBtn = document.createElement('button');
-        meetBtn.className = 'webex-btn';
-        meetBtn.textContent = 'Meet';
-        // For Python Group, use the special Cisco Webex link
-        meetBtn.onclick = (e) => {
-          e.stopPropagation();
-          if (g.name.toLowerCase() === 'python group') {
-            window.open('https://cisco.webex.com/meet/gisankar', '_blank');
-          } else {
-            window.open(g.webex, '_blank');
-          }
-        };
+  if (mode === 'replace') {
+    posts = incomingPosts;
+    groups = incomingGroups;
+  } else {
+    // Merge by ID (posts) and group ID/name (groups)
+    const postMap = new Map(posts.map(p => [p.id, p]));
+    for (const p of incomingPosts) postMap.set(p.id, p);
+    posts = Array.from(postMap.values()).sort((a,b) => (b.date||'').localeCompare(a.date||''));
 
-        header.appendChild(nameDiv);
-        header.appendChild(meetBtn);
-        div.appendChild(header);
+    const groupKey = (g) => g.id || `name:${(g.name||'').toLowerCase()}`;
+    const groupMap = new Map(groups.map(g => [groupKey(g), g]));
+    for (const g of incomingGroups) groupMap.set(groupKey(g), g);
+    groups = Array.from(groupMap.values());
+  }
 
-        groupsContainer.appendChild(div);
-      });
-    }
+  saveState();
+  renderPosts();
+  showToast(mode === 'replace' ? 'Imported (replaced) data.' : 'Imported (merged) data.');
+});
 
-    function showMembers(idx) {
-      const g = groups[idx];
-      // For Python Group, use the special Cisco Webex link
-      const meetUrl = g.name.toLowerCase() === 'python group'
-        ? 'https://cisco.webex.com/meet/gisankar'
-        : g.webex;
-      groupsContainer.innerHTML = `
-        <div class="group-header-wrapper">
-          <div class="group-name">${g.name}</div>
-          <button class="webex-btn" onclick="window.open('${meetUrl}', '_blank')">Meet</button>
+document.getElementById('resetLocalBtn').onclick = () => {
+  if (!confirm('This will erase local saved data. Continue?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  // Keep theme + policy dismissal as-is
+  location.reload();
+};
+
+/* -----------------------
+   MODERATION
+----------------------- */
+
+function moderationBadge(status){
+  if (status === 'flagged') return '<span class="badge badge-flagged">🚩 Flagged</span>';
+  if (status === 'removed') return '<span class="badge badge-removed">🗑 Removed</span>';
+  return '<span class="badge badge-active">✅ Active</span>';
+}
+
+function reportItem(itemId){
+  const item = posts.find(p => p.id === itemId);
+  if (!item) return;
+
+  const reason = prompt('Report reason (optional):', 'Policy violation');
+  item.moderation = item.moderation || { status:'active', flags:[] };
+  item.moderation.status = 'flagged';
+  item.moderation.flags = item.moderation.flags || [];
+  item.moderation.flags.unshift({ by:'demo-user', reason: reason || 'Policy violation', at: nowIso() });
+
+  saveState();
+  renderPosts();
+  showToast('Reported. Sent to moderation queue.');
+}
+
+function approveItem(itemId){
+  const item = posts.find(p => p.id === itemId);
+  if (!item) return;
+  item.moderation.status = 'active';
+  saveState();
+  renderPosts();
+  renderModerationTable();
+  showToast('Approved. Restored to feed.');
+}
+
+function removeItem(itemId){
+  const item = posts.find(p => p.id === itemId);
+  if (!item) return;
+  item.moderation.status = 'removed';
+  saveState();
+  renderPosts();
+  renderModerationTable();
+  showToast('Removed from feed.');
+}
+
+function openModeration(){
+  moderationModal.classList.add('show');
+  renderModerationTable();
+}
+document.getElementById('moderationCloseBtn').onclick = () => moderationModal.classList.remove('show');
+document.getElementById('showRemovedToggle').onchange = renderModerationTable;
+
+function renderModerationTable(){
+  moderationTableBody.innerHTML = '';
+  const showRemoved = document.getElementById('showRemovedToggle').checked;
+
+  const queue = posts
+    .map(ensureModerationFields)
+    .filter(p => p.moderation.status === 'flagged' || (showRemoved && p.moderation.status === 'removed'))
+    .sort((a,b) => {
+      const atA = a.moderation.flags?.[0]?.at || a.date || '';
+      const atB = b.moderation.flags?.[0]?.at || b.date || '';
+      return String(atB).localeCompare(String(atA));
+    });
+
+  if (queue.length === 0) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="4" class="muted">No items in the moderation queue.</td>`;
+    moderationTableBody.appendChild(tr);
+    return;
+  }
+
+  for (const item of queue) {
+    const title = item.type === 'poll' ? (item.question || '(poll)') : (item.title || '(post)');
+    const snippet = item.type === 'poll'
+      ? `Options: ${(item.options||[]).slice(0,4).join(', ')}${(item.options||[]).length>4 ? '…':''}`
+      : (item.content || '').slice(0,120) + ((item.content||'').length>120 ? '…' : '');
+
+    const lastFlag = item.moderation.flags?.[0];
+    const reportedInfo = lastFlag
+      ? `<div class="small"><div><strong>${sanitize(lastFlag.by)}</strong> <span class="muted">(${sanitize(new Date(lastFlag.at).toLocaleString())})</span></div>
+         <div class="muted small">Reason: ${sanitize(lastFlag.reason || '—')}</div></div>`
+      : `<div class="muted small">—</div>`;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${moderationBadge(item.moderation.status)}</td>
+      <td>
+        <div style="font-weight:900; color:var(--brand-strong);">${sanitize(title)}</div>
+        <div class="muted small">${sanitize(item.author || 'Unknown')} • ${sanitize(item.date || '')} • <span class="mono">${sanitize(item.id)}</span></div>
+        <div class="small" style="margin-top:6px;">${sanitize(snippet)}</div>
+      </td>
+      <td>${reportedInfo}</td>
+      <td>
+        <div class="row" style="justify-content:flex-end;">
+          <button class="btn-secondary" onclick="previewItem('${sanitize(item.id)}')">Preview</button>
+          <button onclick="approveItem('${sanitize(item.id)}')">Approve</button>
+          <button class="btn-danger" onclick="removeItem('${sanitize(item.id)}')">Remove</button>
         </div>
-        <div class="group-members"><strong>Members:</strong><br>${g.members.join('<br>')}</div>
-      `;
-    }
+      </td>
+    `;
+    moderationTableBody.appendChild(tr);
+  }
+}
 
-    // Posts and Polls rendering and controls
-    function renderPosts() {
-      postsContainer.innerHTML = '';
-      const filtered = posts.filter(postMatchesQuery);
-      feedStatus.textContent = activeQuery ? `Filtered by "${activeQuery}"` : 'Showing all feed items';
-      feedCount.textContent = `${filtered.length} item${filtered.length === 1 ? '' : 's'}`;
+function previewItem(itemId){
+  const item = posts.find(p => p.id === itemId);
+  if (!item) return;
+  const title = item.type === 'poll' ? item.question : item.title;
+  const body  = item.type === 'poll'
+    ? `Poll options:\n- ${(item.options||[]).join('\n- ')}`
+    : item.content;
 
-      if (filtered.length === 0) {
-        postsContainer.innerHTML = '<p class="empty-state">No feed items match your search.</p>';
-        return;
-      }
+  alert(`Preview\n\n${title}\n\n${body}`);
+}
 
-      filtered.forEach((post, idx) => {
-        if (post.type === 'post') {
-          const div = document.createElement('div');
-          div.className = 'post';
-          div.innerHTML = `
-            <strong>${sanitize(post.author)}</strong> <time>${sanitize(post.date)}</time>
-            <h3>${sanitize(post.title)}</h3>
-            <p>${sanitize(post.content)}</p>
-            ${post.image ? `<img class="post-image" src="${sanitize(post.image)}" alt="${sanitize(post.title || 'Uploaded photo')}" />` : ''}
-            <div class="post-tags">${post.tags.map(t => `<span>${sanitize(t)}</span>`).join('')}</div>
-            <div><em>Visible to: ${sanitize(post.bu.join(', '))}</em></div>
-            <div><button>👍 Like</button><button>💬 Comment</button><button>🔄 Share</button></div>
-          `;
-          postsContainer.appendChild(div);
-        } else if (post.type === 'poll') {
-          postsContainer.appendChild(renderPoll(post, idx));
-        }
-      });
-    }
+/* -----------------------
+   FEED RENDERING
+----------------------- */
 
-    function renderPoll(post, idx) {
+function postMatchesQuery(post){
+  if (!activeQuery) return true;
+  const q = activeQuery.toLowerCase();
+  if (post.type === 'post') {
+    return [post.author, post.title, post.content, (post.tags||[]).join(' '), (post.bu||[]).join(' ')]
+      .join(' ').toLowerCase().includes(q);
+  }
+  return [post.author, post.question, (post.options||[]).join(' '), (post.bu||[]).join(' ')]
+    .join(' ').toLowerCase().includes(q);
+}
+
+function renderPosts(){
+  postsContainer.innerHTML = '';
+  posts = posts.map(ensureModerationFields);
+
+  // Hide removed + flagged from normal feed (flagged stays hidden until approved)
+  const visible = posts
+    .filter(p => p.moderation.status === 'active')
+    .filter(postMatchesQuery);
+
+  feedStatus.textContent = activeQuery ? `Filtered by "${activeQuery}"` : 'Showing active feed items';
+  feedCount.textContent = `${visible.length} item${visible.length === 1 ? '' : 's'}`;
+
+  if (visible.length === 0) {
+    postsContainer.innerHTML = '<p class="empty-state">No active feed items match your search.</p>';
+    return;
+  }
+
+  visible.forEach((post, idx) => {
+    if (post.type === 'post') {
       const div = document.createElement('div');
-      div.className = 'poll';
+      div.className = 'post';
       div.innerHTML = `
-        <strong>${sanitize(post.author)}</strong> <time>${sanitize(post.date)}</time>
-        <div class="poll-block">
-          <div class="poll-question">${sanitize(post.question)}</div>
-          <div><em>Visible to: ${sanitize(post.bu.join(', '))}</em></div>
-          <div id="pollArea${idx}"></div>
+        <div class="row" style="justify-content:space-between;">
+          <div>
+            <strong>${sanitize(post.author)}</strong> <time>${sanitize(post.date)}</time>
+          </div>
+          <div class="row">
+            <button class="btn-warn" title="Report this content" onclick="reportItem('${sanitize(post.id)}')">🚩 Report</button>
+          </div>
+        </div>
+        <h3>${sanitize(post.title)}</h3>
+        <p>${sanitize(post.content)}</p>
+        ${post.image ? `<img class="post-image" src="${sanitize(post.image)}" alt="${sanitize(post.title || 'Uploaded photo')}" />` : ''}
+        <div class="post-tags">${(post.tags || []).map(t => `<span>${sanitize(t)}</span>`).join('')}</div>
+        <div class="muted small"><em>Visible to: ${sanitize((post.bu || ['All']).join(', '))}</em></div>
+        <div class="row" style="margin-top:8px;">
+          <button>👍 Like</button><button>💬 Comment</button><button>🔄 Share</button>
         </div>
       `;
-      const pollArea = div.querySelector(`#pollArea${idx}`);
-
-      if (!(post.voters && post.voters['demo-user'])) {
-        const form = document.createElement('form');
-        form.innerHTML = post.options.map((opt, oidx) => `
-          <label style="display:block;margin:4px 0">
-            <input type="radio" name="opt${idx}" value="${oidx}"/> ${sanitize(opt)}
-          </label>`).join('') + `<button type="submit">Vote</button>`;
-        form.onsubmit = e => {
-          e.preventDefault();
-          const sel = form.querySelector('input[name=opt' + idx + ']:checked');
-          if (!sel) return;
-          if (!post.voters) post.voters = {};
-          post.voters['demo-user'] = sel.value;
-          post.votes[sel.value] = (post.votes[sel.value] || 0) + 1;
-          renderPosts();
-        };
-        pollArea.appendChild(form);
-      } else {
-        const totalVotes = post.votes.reduce((a, b) => a + b, 0) || 1;
-        let html = '';
-        post.options.forEach((opt, i) => {
-          const pct = Math.round((post.votes[i] || 0) * 100 / totalVotes);
-          html += `<span>${sanitize(opt)}: ${pct}% (${post.votes[i] || 0})</span> `;
-        });
-        pollArea.innerHTML = `<div class="poll-results">${html}</div><div>Thanks for voting!</div>`;
-      }
-
-      return div;
+      postsContainer.appendChild(div);
+    } else if (post.type === 'poll') {
+      postsContainer.appendChild(renderPoll(post, idx));
     }
+  });
+}
 
-    function postMatchesQuery(post) {
-      if (!activeQuery) return true;
-      const q = activeQuery.toLowerCase();
-      if (post.type === 'post') {
-        return [post.author, post.title, post.content, post.tags.join(' '), post.bu.join(' ')].join(' ').toLowerCase().includes(q);
-      }
-      return [post.author, post.question, post.options.join(' '), post.bu.join(' ')].join(' ').toLowerCase().includes(q);
-    }
+function renderPoll(post, idx){
+  const div = document.createElement('div');
+  div.className = 'poll';
+  div.innerHTML = `
+    <div class="row" style="justify-content:space-between;">
+      <div><strong>${sanitize(post.author)}</strong> <time>${sanitize(post.date)}</time></div>
+      <button class="btn-warn" title="Report this poll" onclick="reportItem('${sanitize(post.id)}')">🚩 Report</button>
+    </div>
+    <div class="poll-block">
+      <div class="poll-question">${sanitize(post.question)}</div>
+      <div class="muted small"><em>Visible to: ${sanitize((post.bu || ['All']).join(', '))}</em></div>
+      <div id="pollArea${idx}"></div>
+    </div>
+  `;
+  const pollArea = div.querySelector(`#pollArea${idx}`);
 
-    function sanitize(str) {
-      return String(str).replace(/[&<>"']/g, function (m) {
-        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
-      });
-    }
+  if (!(post.voters && post.voters['demo-user'])) {
+    const form = document.createElement('form');
+    form.innerHTML = (post.options || []).map((opt, oidx) => `
+      <label style="display:block;margin:4px 0">
+        <input type="radio" name="opt${idx}" value="${oidx}"/> ${sanitize(opt)}
+      </label>`).join('') + `<button type="submit">Vote</button>`;
+    form.onsubmit = e => {
+      e.preventDefault();
+      const sel = form.querySelector('input[name=opt' + idx + ']:checked');
+      if (!sel) return;
 
-    function wishGoodLuck(name) {
-      showToast(`Good luck wishes sent to ${name}!`);
-    }
-    window.wishGoodLuck = wishGoodLuck;
+      if (!post.voters) post.voters = {};
+      post.voters['demo-user'] = sel.value;
+      post.votes[sel.value] = (post.votes[sel.value] || 0) + 1;
 
-    document.getElementById('postCancel').onclick = () => {
-      postCreation.style.display = 'none';
-      clearPostForm();
-    };
-    document.getElementById('pollCancel').onclick = () => {
-      pollCreation.style.display = 'none';
-      clearPollForm();
-    };
-    document.getElementById('photoCancel').onclick = () => {
-      photoCreation.style.display = 'none';
-      clearPhotoForm();
-    };
-
-    function clearPostForm() {
-      document.getElementById('postTitle').value = '';
-      document.getElementById('postContent').value = '';
-      document.getElementById('postTags').value = '';
-      document.getElementById('postBU').selectedIndex = 0;
-    }
-
-    function clearPollForm() {
-      document.getElementById('pollQuestion').value = '';
-      document.getElementById('pollOptions').value = '';
-      document.getElementById('pollBU').selectedIndex = 0;
-    }
-
-    function clearPhotoForm() {
-      document.getElementById('photoTitle').value = '';
-      document.getElementById('photoCaption').value = '';
-      document.getElementById('photoFile').value = '';
-      document.getElementById('photoBU').selectedIndex = 0;
-      document.getElementById('photoPreviewWrap').innerHTML = 'No photo selected. Drag and drop an image here.';
-    }
-
-    function closeCall() {
-      document.getElementById('callCountry').value = '';
-      document.getElementById('callNumber').value = '';
-      callModal.classList.remove('show');
-    }
-
-    function updateVideoPreview() {
-      const topic = document.getElementById('videoTopic').value.trim();
-      const cameraOn = document.getElementById('videoCameraToggle').checked;
-      const micOn = document.getElementById('videoMicToggle').checked;
-      document.getElementById('videoPreviewName').textContent = topic || 'Host';
-      document.getElementById('videoPreviewState').textContent = `Camera: ${cameraOn ? 'On' : 'Off'} | Mic: ${micOn ? 'On' : 'Off'}`;
-    }
-
-    function closeVideoCall() {
-      document.getElementById('videoTopic').value = '';
-      document.getElementById('videoParticipant').value = '';
-      document.getElementById('videoCameraToggle').checked = true;
-      document.getElementById('videoMicToggle').checked = true;
-      updateVideoPreview();
-      videoCallModal.classList.remove('show');
-    }
-    function setActiveVideoCall(topic, participant, url) {
-      activeVideoCallUrl = url;
-      videoCallBannerStatus.textContent = `Live: "${topic}" with ${participant}`;
-      videoJoinBtn.style.display = 'inline-block';
-      videoEndBtn.style.display = 'inline-block';
-    }
-    function clearActiveVideoCall() {
-      activeVideoCallUrl = '';
-      videoCallBannerStatus.textContent = 'No active video call.';
-      videoJoinBtn.style.display = 'none';
-      videoEndBtn.style.display = 'none';
-    }
-
-    function getSelectedValues(selectId) {
-      const options = Array.from(document.getElementById(selectId).selectedOptions).map(o => o.value);
-      return options.length ? options : ['All'];
-    }
-
-    function formatDate(date = new Date()) {
-      return date.toISOString().slice(0, 10);
-    }
-
-    function showToast(message) {
-      let toast = document.getElementById('appToast');
-      if (!toast) {
-        toast = document.createElement('div');
-        toast.id = 'appToast';
-        toast.className = 'toast';
-        document.body.appendChild(toast);
-      }
-      toast.textContent = message;
-      toast.classList.add('show');
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
-    }
-
-    document.getElementById('postSubmit').onclick = () => {
-      const title = document.getElementById('postTitle').value.trim();
-      const content = document.getElementById('postContent').value.trim();
-      const rawTags = document.getElementById('postTags').value.trim();
-      if (!title || !content) {
-        showToast('Post title and content are required.');
-        return;
-      }
-      const tags = rawTags
-        ? rawTags.split(',').map(t => t.trim()).filter(Boolean).map(t => t.startsWith('#') ? t : `#${t}`)
-        : ['#Update'];
-      posts.unshift({
-        type: 'post',
-        author: 'You',
-        date: formatDate(),
-        title,
-        content,
-        tags,
-        bu: getSelectedValues('postBU')
-      });
-      clearPostForm();
-      postCreation.style.display = 'none';
+      saveState();
       renderPosts();
-      showToast('Post published.');
     };
-
-    document.getElementById('pollSubmit').onclick = () => {
-      const question = document.getElementById('pollQuestion').value.trim();
-      const options = document.getElementById('pollOptions').value
-        .split('\n')
-        .map(o => o.trim())
-        .filter(Boolean);
-      if (!question || options.length < 2) {
-        showToast('Add a poll question and at least 2 options.');
-        return;
-      }
-      posts.unshift({
-        type: 'poll',
-        author: 'You',
-        date: formatDate(),
-        question,
-        options,
-        votes: new Array(options.length).fill(0),
-        voters: {},
-        bu: getSelectedValues('pollBU')
-      });
-      clearPollForm();
-      pollCreation.style.display = 'none';
-      renderPosts();
-      showToast('Poll posted.');
-    };
-
-    document.getElementById('globalSearch').addEventListener('input', (e) => {
-      activeQuery = e.target.value.trim();
-      renderPosts();
+    pollArea.appendChild(form);
+  } else {
+    const totalVotes = (post.votes || []).reduce((a,b) => a + b, 0) || 1;
+    let html = '';
+    (post.options || []).forEach((opt, i) => {
+      const pct = Math.round((post.votes[i] || 0) * 100 / totalVotes);
+      html += `<span>${sanitize(opt)}: ${pct}% (${post.votes[i] || 0})</span> `;
     });
+    pollArea.innerHTML = `<div class="poll-results">${html}</div><div class="muted small">Thanks for voting!</div>`;
+  }
 
-    document.getElementById('photoFile').addEventListener('change', (e) => {
-      const [file] = e.target.files || [];
-      setPhotoFile(file);
-    });
+  return div;
+}
 
-    function setPhotoFile(file) {
-      const previewWrap = document.getElementById('photoPreviewWrap');
-      const photoInput = document.getElementById('photoFile');
-      if (!file) {
-        previewWrap.textContent = 'No photo selected. Drag and drop an image here.';
-        return false;
-      }
-      if (!file.type.startsWith('image/')) {
-        showToast('Please select an image file.');
-        photoInput.value = '';
-        previewWrap.textContent = 'No photo selected. Drag and drop an image here.';
-        return false;
-      }
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      photoInput.files = dt.files;
-      const reader = new FileReader();
-      reader.onload = () => {
-        previewWrap.innerHTML = `<img class="photo-preview" src="${sanitize(reader.result)}" alt="Photo preview" />`;
-      };
-      reader.readAsDataURL(file);
-      return true;
-    }
+/* -----------------------
+   CREATE POST / POLL / PHOTO
+----------------------- */
+function getSelectedValues(selectId){
+  const options = Array.from(document.getElementById(selectId).selectedOptions).map(o => o.value);
+  return options.length ? options : ['All'];
+}
 
-    const photoPreviewWrap = document.getElementById('photoPreviewWrap');
-    ['dragenter', 'dragover'].forEach((evt) => {
-      photoPreviewWrap.addEventListener(evt, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        photoPreviewWrap.classList.add('dragover');
-      });
-    });
-    ['dragleave', 'drop'].forEach((evt) => {
-      photoPreviewWrap.addEventListener(evt, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        photoPreviewWrap.classList.remove('dragover');
-      });
-    });
-    photoPreviewWrap.addEventListener('drop', (e) => {
-      const [file] = e.dataTransfer.files || [];
-      setPhotoFile(file);
-    });
+document.getElementById('postCancel').onclick = () => { postCreation.style.display='none'; clearPostForm(); };
+document.getElementById('pollCancel').onclick = () => { pollCreation.style.display='none'; clearPollForm(); };
+document.getElementById('photoCancel').onclick = () => { photoCreation.style.display='none'; clearPhotoForm(); };
 
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        groupsModal.style.display = 'none';
-        closeCall();
-        closeVideoCall();
-        groupCreationForm.style.display = 'none';
-      }
-    });
+function clearPostForm(){
+  document.getElementById('postTitle').value='';
+  document.getElementById('postContent').value='';
+  document.getElementById('postTags').value='';
+  document.getElementById('postBU').selectedIndex=0;
+}
+function clearPollForm(){
+  document.getElementById('pollQuestion').value='';
+  document.getElementById('pollOptions').value='';
+  document.getElementById('pollBU').selectedIndex=0;
+}
+function clearPhotoForm(){
+  document.getElementById('photoTitle').value='';
+  document.getElementById('photoCaption').value='';
+  document.getElementById('photoFile').value='';
+  document.getElementById('photoBU').selectedIndex=0;
+  document.getElementById('photoPreviewWrap').textContent='No photo selected. Drag and drop an image here.';
+}
 
-    document.getElementById('photoSubmit').onclick = () => {
-      const title = document.getElementById('photoTitle').value.trim();
-      const caption = document.getElementById('photoCaption').value.trim();
-      const file = document.getElementById('photoFile').files[0];
-      if (!title || !file) {
-        showToast('Photo title and image are required.');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => {
-        posts.unshift({
-          type: 'post',
-          author: 'You',
-          date: formatDate(),
-          title,
-          content: caption || 'Shared a new photo.',
-          image: reader.result,
-          tags: ['#Photo'],
-          bu: getSelectedValues('photoBU')
-        });
-        clearPhotoForm();
-        photoCreation.style.display = 'none';
-        renderPosts();
-        showToast('Photo uploaded to feed.');
-      };
-      reader.readAsDataURL(file);
-    };
+document.getElementById('postSubmit').onclick = () => {
+  const title = document.getElementById('postTitle').value.trim();
+  const content = document.getElementById('postContent').value.trim();
+  const rawTags = document.getElementById('postTags').value.trim();
+  if (!title || !content) { showToast('Post title and content are required.'); return; }
 
+  const tags = rawTags
+    ? rawTags.split(',').map(t => t.trim()).filter(Boolean).map(t => t.startsWith('#') ? t : `#${t}`)
+    : ['#Update'];
+
+  posts.unshift(ensureModerationFields({
+    id: uid('post'),
+    type:'post',
+    author:'You',
+    date: formatDate(),
+    title, content, tags,
+    bu: getSelectedValues('postBU'),
+    moderation: { status:'active', flags:[] }
+  }));
+
+  saveState();
+  clearPostForm();
+  postCreation.style.display='none';
+  renderPosts();
+  showToast('Post published.');
+};
+
+document.getElementById('pollSubmit').onclick = () => {
+  const question = document.getElementById('pollQuestion').value.trim();
+  const options = document.getElementById('pollOptions').value
+    .split('\n').map(o => o.trim()).filter(Boolean);
+
+  if (!question || options.length < 2) { showToast('Add a poll question and at least 2 options.'); return; }
+
+  posts.unshift(ensureModerationFields({
+    id: uid('poll'),
+    type:'poll',
+    author:'You',
+    date: formatDate(),
+    question,
+    options,
+    votes: new Array(options.length).fill(0),
+    voters: {},
+    bu: getSelectedValues('pollBU'),
+    moderation: { status:'active', flags:[] }
+  }));
+
+  saveState();
+  clearPollForm();
+  pollCreation.style.display='none';
+  renderPosts();
+  showToast('Poll posted.');
+};
+
+document.getElementById('globalSearch').addEventListener('input', (e) => {
+  activeQuery = e.target.value.trim();
+  renderPosts();
+});
+
+/* Photo upload */
+document.getElementById('photoFile').addEventListener('change', (e) => {
+  const [file] = e.target.files || [];
+  setPhotoFile(file);
+});
+
+const photoPreviewWrap = document.getElementById('photoPreviewWrap');
+
+function setPhotoFile(file){
+  const photoInput = document.getElementById('photoFile');
+  if (!file){
+    photoPreviewWrap.textContent='No photo selected. Drag and drop an image here.';
+    return false;
+  }
+  if (!file.type.startsWith('image/')){
+    showToast('Please select an image file.');
+    photoInput.value='';
+    photoPreviewWrap.textContent='No photo selected. Drag and drop an image here.';
+    return false;
+  }
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  photoInput.files = dt.files;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    photoPreviewWrap.innerHTML = `<img class="post-image" src="${sanitize(reader.result)}" alt="Photo preview" style="max-width:100%; margin:0;" />`;
+  };
+  reader.readAsDataURL(file);
+  return true;
+}
+
+// Drag/drop
+['dragenter','dragover'].forEach(evt => photoPreviewWrap.addEventListener(evt, (e) => {
+  e.preventDefault(); e.stopPropagation();
+  photoPreviewWrap.style.borderColor = 'var(--brand)';
+}));
+['dragleave','drop'].forEach(evt => photoPreviewWrap.addEventListener(evt, (e) => {
+  e.preventDefault(); e.stopPropagation();
+  photoPreviewWrap.style.borderColor = 'var(--border)';
+}));
+photoPreviewWrap.addEventListener('drop', (e) => {
+  const [file] = e.dataTransfer.files || [];
+  setPhotoFile(file);
+});
+
+document.getElementById('photoSubmit').onclick = () => {
+  const title = document.getElementById('photoTitle').value.trim();
+  const caption = document.getElementById('photoCaption').value.trim();
+  const file = document.getElementById('photoFile').files[0];
+  if (!title || !file) { showToast('Photo title and image are required.'); return; }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    posts.unshift(ensureModerationFields({
+      id: uid('post'),
+      type:'post',
+      author:'You',
+      date: formatDate(),
+      title,
+      content: caption || 'Shared a new photo.',
+      image: reader.result,
+      tags: ['#Photo'],
+      bu: getSelectedValues('photoBU'),
+      moderation: { status:'active', flags:[] }
+    }));
+
+    saveState();
+    clearPhotoForm();
+    photoCreation.style.display='none';
     renderPosts();
-  </script>
+    showToast('Photo uploaded to feed.');
+  };
+  reader.readAsDataURL(file);
+};
+
+/* -----------------------
+   GLOBAL ESC + OUTSIDE CLICK
+----------------------- */
+window.addEventListener('click', (e) => {
+  if (e.target === groupsModal) groupsModal.classList.remove('show');
+  if (e.target === dataModal) dataModal.classList.remove('show');
+  if (e.target === moderationModal) moderationModal.classList.remove('show');
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') hideOverlays();
+});
+
+/* -----------------------
+   BOOT
+----------------------- */
+loadTheme();
+loadState();
+posts = posts.map(ensureModerationFields);
+loadPolicyBanner();
+saveState();     // ensures we persist migrations (ids/mod fields)
+renderPosts();
+
+// Expose moderation funcs for inline onclick handlers
+window.reportItem = reportItem;
+window.approveItem = approveItem;
+window.removeItem = removeItem;
+window.previewItem = previewItem;
+
+</script>
+
+<!--
+=========================================================
+DOCS UPDATE PACK (Option C) — paste into your project docs
+=========================================================
+
+# Feature: Data Portability + Moderation Workflow
+
+## Overview
+Adds JSON export/import and a local moderation workflow:
+- Users can report content from the feed.
+- Reported content enters moderation queue (flagged).
+- Moderators can approve (restore) or remove (hide).
+- Export/import includes moderation state.
+
+## User Stories
+- As a user, I can export my feed/groups as a JSON file.
+- As a user, I can import a JSON export to restore/transfer my data.
+- As a user, I can report a post/poll that violates policy.
+- As a moderator, I can review reported items and approve/remove them.
+
+## Content Policy
+- No harassment/hate.
+- No confidential Cisco info.
+- No personal data / doxxing.
+- No impersonation or unsafe content.
+
+## Data Model
+### Export format
+{
+  "format": "cisco_social_export_v1",
+  "exported_at": "<ISO8601>",
+  "app_version": 2,
+  "data": {
+    "posts": [FeedItem...],
+    "groups": [Group...]
+  }
+}
+
+### FeedItem
+- id: string (required)
+- type: "post" | "poll"
+- author: string
+- date: "YYYY-MM-DD"
+- bu: string[]
+- moderation:
+  - status: "active" | "flagged" | "removed"
+  - flags: [{ by, reason, at }]
+
+## Workflow
+- Report:
+  - sets moderation.status = "flagged"
+  - appends flags[] entry
+  - hides item from main feed (only "active" shows)
+- Approve:
+  - status -> "active"
+- Remove:
+  - status -> "removed" (still visible optionally in moderation panel)
+
+## Import Rules
+- Validate format === cisco_social_export_v1
+- Validate payload.data.posts/groups arrays
+- Mode: merge or replace
+  - merge: upsert by post.id; upsert groups by group.id or case-insensitive name
+  - replace: overwrite posts/groups completely
+
+## Security / Governance Notes (for production)
+- Replace local-only moderation with backend + RBAC:
+  - who can approve/remove, audit trails
+  - append-only moderation log (immutable)
+- Add server-side validation/sanitization
+- Rate-limit reporting
+- Retention policies for removed content and audit logs
+- Telemetry: count flags by category, time-to-moderate, repeat offenders
+
+## Test Plan
+- Export produces valid JSON and reloadable import
+- Import invalid format is rejected
+- Merge preserves existing + adds new
+- Replace fully overwrites
+- Reporting hides content from feed and shows in moderation queue
+- Approve restores to feed
+- Remove hides from feed and optionally visible in moderation view
+- Persistence across refresh via localStorage
+=========================================================
+-->
 </body>
 </html>
