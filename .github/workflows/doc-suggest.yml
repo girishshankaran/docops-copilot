@@ -186,6 +186,23 @@ jobs:
           else
             echo "No suggestions directory was created."
           fi
+      - name: Enforce non-empty patch generation for mapped targets
+        run: |
+          set -euo pipefail
+          report="suggestions/run-report.json"
+          if [ ! -f "$report" ]; then
+            echo "Missing $report"
+            exit 1
+          fi
+          target_count=$(jq -r '.targetCount // 0' "$report")
+          generated_count=$(jq -r '.generatedPatchCount // 0' "$report")
+          if [ "$target_count" -gt 0 ] && [ "$generated_count" -eq 0 ]; then
+            echo "Mapped targets were found but no valid patches were generated."
+            echo "Failing run to avoid false-positive success."
+            cat "$report"
+            exit 1
+          fi
+          echo "Patch generation guardrail passed (targetCount=$target_count, generatedPatchCount=$generated_count)."
       - uses: actions/upload-artifact@v4
         with:
           name: doc-suggestions
