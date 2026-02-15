@@ -6,7 +6,7 @@
   <title>Cisco Social - Home</title>
 
   <style>
-    :root {
+    :root{
       --brand:#0f5ea8; --brand-strong:#0a4a84; --accent:#00bceb; --success:#0d8f5f;
       --bg:#eef3f8; --surface:#ffffff; --text:#12324f; --muted:#58708a;
       --ring:rgba(15,94,168,.25); --shadow:0 8px 24px rgba(6,28,52,.12);
@@ -63,9 +63,7 @@
     }
     .theme-btn:hover{background:rgba(255,255,255,.22)}
     .role-chip{
-      display:flex;
-      align-items:center;
-      gap:8px;
+      display:flex; align-items:center; gap:8px;
       border:1px solid rgba(255,255,255,.65);
       background:rgba(255,255,255,.12);
       padding:6px 10px;
@@ -83,9 +81,7 @@
       outline:none;
       cursor:pointer;
     }
-    .role-chip select option{
-      color:#0b1621;
-    }
+    .role-chip select option{ color:#0b1621; }
 
     .container{display:flex; padding:1.5rem; gap:2rem; max-width:1400px; margin:0 auto}
     .main-feed{
@@ -122,7 +118,7 @@
       padding:7px 12px;
       border-radius:6px;
       font-size:.9rem;
-      transition:background-color .2s, opacity .2s;
+      transition:background-color .2s, opacity .2s, filter .2s;
       user-select:none;
     }
     button:hover{background:var(--brand-strong)}
@@ -130,6 +126,9 @@
       cursor:not-allowed;
       opacity:.55;
       background:var(--disabled);
+    }
+    button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{
+      outline:3px solid var(--ring); outline-offset:1px;
     }
 
     .btn-secondary{background:#6d839b}
@@ -140,10 +139,10 @@
     .btn-warn:hover{filter:brightness(.92)}
 
     .actions{display:flex; gap:1rem; margin-bottom:1rem; flex-wrap:wrap; align-items:center}
-    .actions button{flex:1 1 140px; font-weight:600; min-width:120px}
+    .actions button{flex:1 1 140px; font-weight:700; min-width:120px}
 
     .feed-tools{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px}
-    .feed-status{margin:0; color:var(--muted); font-size:.9rem; font-weight:600}
+    .feed-status{margin:0; color:var(--muted); font-size:.9rem; font-weight:700}
     .pill{
       border:1px solid rgba(15,94,168,.3);
       background:rgba(246,251,255,.9);
@@ -151,7 +150,7 @@
       border-radius:999px;
       padding:5px 10px;
       font-size:.8rem;
-      font-weight:700;
+      font-weight:800;
       user-select:none;
     }
     html[data-theme="dark"] .pill{
@@ -176,7 +175,7 @@
       border-color:rgba(180,205,230,.18);
     }
     .policy-banner strong{color:var(--brand-strong)}
-    .policy-banner .tiny{color:var(--muted); font-size:.85rem; font-weight:600}
+    .policy-banner .tiny{color:var(--muted); font-size:.85rem; font-weight:700}
     .policy-banner button{padding:6px 10px; font-size:.85rem; border-radius:10px}
 
     .post,.poll{margin-bottom:1.2rem; padding-bottom:8px; border-bottom:1px solid var(--divider)}
@@ -189,7 +188,7 @@
       margin-right:6px;
       border-radius:6px;
       font-size:.8rem;
-      font-weight:600;
+      font-weight:700;
       user-select:none;
     }
     html[data-theme="dark"] .post-tags span{background:rgba(0,188,235,.18); color:#bfefff}
@@ -202,7 +201,7 @@
       border:1px solid var(--border);
     }
     html[data-theme="dark"] .poll-block{background:rgba(0,188,235,.08)}
-    .poll-results{color:var(--brand-strong); font-weight:600}
+    .poll-results{color:var(--brand-strong); font-weight:800}
     html[data-theme="dark"] .poll-results{color:#bfefff}
     .poll-results span{margin-right:20px; font-size:.9rem}
 
@@ -259,7 +258,7 @@
       border-radius:12px;
       box-shadow:0 6px 16px rgba(8,30,56,.18);
     }
-    .empty-state{color:var(--muted); font-weight:600; padding:8px 0}
+    .empty-state{color:var(--muted); font-weight:700; padding:8px 0}
 
     .toast{
       position:fixed;
@@ -279,7 +278,7 @@
     .toast.show{opacity:1; transform:translateY(0)}
 
     .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-    .muted{color:var(--muted); font-weight:600}
+    .muted{color:var(--muted); font-weight:700}
     .small{font-size:.9rem}
     .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
 
@@ -303,7 +302,7 @@
     .badge{
       display:inline-flex; align-items:center; gap:6px;
       font-size:.8rem;
-      font-weight:800;
+      font-weight:900;
       padding:4px 8px;
       border-radius:999px;
       border:1px solid rgba(0,0,0,.12);
@@ -338,7 +337,7 @@
       <input id="globalSearch" type="search" placeholder="Search posts, polls, people..." />
     </div>
 
-    <!-- RBAC: Role selector (demo login) -->
+    <!-- RBAC role selector (frontend demo) -->
     <div class="role-chip" title="Demo RBAC: choose your role">
       <span>Role</span>
       <select id="roleSelect" aria-label="Select role">
@@ -358,11 +357,10 @@
       <div style="font-size:18px;">🛡️</div>
       <div style="flex:1;">
         <div><strong>Content policy:</strong> Be respectful. Don’t share confidential data, personal info, or harassment.</div>
-        <div class="tiny">Use <span class="mono">🚩 Report</span> on a post if it violates policy. Moderators may remove content.</div>
+        <div class="tiny">Use <span class="mono">🚩 Report</span> if it violates policy. Moderators may remove content.</div>
       </div>
       <button class="btn-secondary" id="dismissPolicyBtn">Dismiss</button>
     </div>
-/poll
 
     <div class="actions">
       <button id="postsBtn">Posts</button>
@@ -371,10 +369,11 @@
       <button id="quickPollBtn">Quick Poll</button>
       <button id="dataToolsBtn">Data Tools</button>
       <button id="moderationBtn">Moderation</button>
+      <button id="reportsBtn">Reports</button>
     </div>
 
     <div class="feed-tools">
-      <p id="feedStatus" class="feed-status">Showing all feed items</p>
+      <p id="feedStatus" class="feed-status">Showing active feed items</p>
       <span id="feedCount" class="pill">0 items</span>
     </div>
 
@@ -437,6 +436,13 @@
     </div>
   </main>
 
+  <aside class="sidebar">
+    <section class="section">
+      <h2>Upcoming Events</h2>
+      <div>Wellness Webinar - Aug 25 <button>RSVP</button></div>
+      <div>Team Coffee Chat - Aug 22 <button>RSVP</button></div>
+      <div>Cisco Content Expo - March 2026 <button>RSVP</button></div>
+    </section>
 
     <section class="section">
       <h2>Job Opportunities</h2>
@@ -552,20 +558,53 @@
   </div>
 </div>
 
+<!-- Reports Modal (frontend-only) -->
+<div id="reportsModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-head">
+      <div>
+        <h2 style="margin:0;">Reports</h2>
+        <div class="muted small">Select a department and format to generate a report (frontend-only).</div>
+      </div>
+      <button id="reportsCloseBtn" class="close-btn" aria-label="Close reports">&times;</button>
+    </div>
+
+    <label class="muted small" for="reportDeptSelect">Department</label>
+    <select id="reportDeptSelect" class="content-input">
+      <option value="HR">HR</option>
+      <option value="Engineering">Engineering</option>
+      <option value="Marketing">Marketing</option>
+      <option value="Sales">Sales</option>
+      <option value="All">All</option>
+    </select>
+
+    <label class="muted small" for="reportFormatSelect" style="display:block; margin-top:10px;">Report format</label>
+    <select id="reportFormatSelect" class="content-input">
+      <option value="pdf">PDF</option>
+      <option value="xls">XLS</option>
+    </select>
+
+    <div class="row" style="justify-content:flex-end; margin-top:12px;">
+      <button id="reportsCancelBtn" class="btn-secondary">Cancel</button>
+      <button id="reportsOkBtn">OK</button>
+    </div>
+
+    <div class="muted small" style="margin-top:10px;">
+      Generates a local downloadable file from the current in-browser data. No backend required.
+    </div>
+  </div>
+</div>
+
 <script>
 /**
- * OPTION C + RBAC (demo):
- * - Roles: employee | moderator | admin
- * - Permissions:
- *   - Report: all roles
- *   - Open moderation: moderator/admin
- *   - Approve/remove: moderator/admin
- *   - Export: all roles
- *   - Import: admin only
- *   - Reset local: admin only
+ * Frontend-only demo app:
+ * - Feed + posts/polls/photos
+ * - Option C: Export/Import JSON + Moderation workflow (report -> approve/remove)
+ * - RBAC: employee/moderator/admin
+ * - Reports: department + format (PDF/XLS) -> downloads locally generated file
  */
 
-const STORAGE_KEY = 'cisco_social_state_v3';
+const STORAGE_KEY = 'cisco_social_state_v4';
 const THEME_KEY   = 'cisco_social_theme_v1';
 const POLICY_KEY  = 'cisco_social_policy_dismissed_v1';
 const ROLE_KEY    = 'cisco_social_role_v1';
@@ -579,6 +618,9 @@ function sanitize(str){
   return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
+/* -----------------------
+   Toast
+----------------------- */
 let toastTimer;
 function showToast(message) {
   let toast = document.getElementById('appToast');
@@ -597,21 +639,15 @@ function showToast(message) {
 /* -----------------------
    RBAC
 ----------------------- */
-const Roles = Object.freeze({
-  employee: 'employee',
-  moderator: 'moderator',
-  admin: 'admin'
-});
-
+const Roles = Object.freeze({ employee:'employee', moderator:'moderator', admin:'admin' });
 const Permissions = Object.freeze({
-  REPORT: 'report',
-  MOD_VIEW: 'mod_view',
-  MOD_ACTION: 'mod_action',
-  EXPORT: 'export',
-  IMPORT: 'import',
-  RESET: 'reset'
+  REPORT:'report',
+  MOD_VIEW:'mod_view',
+  MOD_ACTION:'mod_action',
+  EXPORT:'export',
+  IMPORT:'import',
+  RESET:'reset'
 });
-
 const RolePermissions = Object.freeze({
   [Roles.employee]: new Set([Permissions.REPORT, Permissions.EXPORT]),
   [Roles.moderator]: new Set([Permissions.REPORT, Permissions.EXPORT, Permissions.MOD_VIEW, Permissions.MOD_ACTION]),
@@ -620,13 +656,17 @@ const RolePermissions = Object.freeze({
 
 let currentRole = Roles.employee;
 
+function can(permission){ return RolePermissions[currentRole]?.has(permission) || false; }
+function requirePerm(permission, denialMsg){
+  if (can(permission)) return true;
+  showToast(denialMsg || 'Not permitted.');
+  return false;
+}
 function loadRole(){
   const saved = localStorage.getItem(ROLE_KEY);
   currentRole = (saved && RolePermissions[saved]) ? saved : Roles.employee;
-  const sel = document.getElementById('roleSelect');
-  sel.value = currentRole;
+  document.getElementById('roleSelect').value = currentRole;
 }
-
 function setRole(role){
   if (!RolePermissions[role]) return;
   currentRole = role;
@@ -634,39 +674,25 @@ function setRole(role){
   applyRbacToUi();
   showToast(`Role set to: ${role}`);
 }
-
-function can(permission){
-  return RolePermissions[currentRole]?.has(permission) || false;
-}
-
-function requirePerm(permission, denialMsg){
-  if (can(permission)) return true;
-  showToast(denialMsg || 'Not permitted.');
-  return false;
-}
-
 function applyRbacToUi(){
-  // Moderation button
   const modBtn = document.getElementById('moderationBtn');
   modBtn.disabled = !can(Permissions.MOD_VIEW);
   modBtn.title = can(Permissions.MOD_VIEW) ? 'Open moderation queue' : 'Moderator/Admin only';
 
-  // Data Tools are visible to all, but restrict Import/Reset inside modal
   const importBtn = document.getElementById('importBtn');
   const resetBtn = document.getElementById('resetLocalBtn');
-
   importBtn.disabled = !can(Permissions.IMPORT);
   resetBtn.disabled = !can(Permissions.RESET);
 
   document.getElementById('dataToolsRbacHint').textContent =
-    `RBAC: Export is allowed for everyone. Import/Reset are Admin only. Current role: ${currentRole}.`;
+    `RBAC: Export allowed for everyone. Import/Reset are Admin only. Current role: ${currentRole}.`;
 
   document.getElementById('moderationRbacHint').textContent =
-    `RBAC: Approve/Remove are allowed for Moderator/Admin. Current role: ${currentRole}.`;
+    `RBAC: Approve/Remove allowed for Moderator/Admin. Current role: ${currentRole}.`;
 }
 
 /* -----------------------
-   THEME
+   Theme
 ----------------------- */
 function loadTheme(){
   const t = localStorage.getItem(THEME_KEY) || 'light';
@@ -685,11 +711,10 @@ function updateThemeToggleLabel(){
   const cur = document.documentElement.getAttribute('data-theme') || 'light';
   const btn = document.getElementById('themeToggleBtn');
   btn.textContent = cur === 'dark' ? '☀️ Light' : '🌙 Dark';
-  btn.setAttribute('aria-label', cur === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
 }
 
 /* -----------------------
-   DATA MODEL
+   Data model
 ----------------------- */
 let groups = [
   { id: uid('grp'), name: "AI Engineers", members: ["Raj S.","David K."], webex: "https://webex.com/meet/ai-engineers" },
@@ -725,7 +750,7 @@ let posts = [
 let activeQuery = '';
 
 /* -----------------------
-   PERSISTENCE
+   Persistence
 ----------------------- */
 function ensureModerationFields(item){
   if (!item || typeof item !== 'object') return item;
@@ -736,7 +761,7 @@ function ensureModerationFields(item){
   return item;
 }
 function saveState(){
-  const state = { version: 3, posts, groups };
+  const state = { version: 4, posts, groups };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 function loadState(){
@@ -749,7 +774,7 @@ function loadState(){
 }
 
 /* -----------------------
-   POLICY BANNER
+   Policy banner
 ----------------------- */
 function loadPolicyBanner(){
   const dismissed = localStorage.getItem(POLICY_KEY) === '1';
@@ -761,21 +786,24 @@ document.getElementById('dismissPolicyBtn').onclick = () => {
 };
 
 /* -----------------------
-   UI ELEMENTS
+   UI refs
 ----------------------- */
 const postsContainer = document.getElementById('postsContainer');
 const postCreation   = document.getElementById('postCreation');
 const pollCreation   = document.getElementById('pollCreation');
 const photoCreation  = document.getElementById('photoCreation');
-const groupsModal    = document.getElementById('groupsModal');
-const groupsContainer= document.getElementById('groupsContainer');
 
-const dataModal      = document.getElementById('dataModal');
-const moderationModal= document.getElementById('moderationModal');
+const groupsModal     = document.getElementById('groupsModal');
+const groupsContainer = document.getElementById('groupsContainer');
+
+const dataModal        = document.getElementById('dataModal');
+const moderationModal  = document.getElementById('moderationModal');
 const moderationTableBody = document.getElementById('moderationTableBody');
 
-const feedStatus     = document.getElementById('feedStatus');
-const feedCount      = document.getElementById('feedCount');
+const reportsModal     = document.getElementById('reportsModal');
+
+const feedStatus = document.getElementById('feedStatus');
+const feedCount  = document.getElementById('feedCount');
 
 function hideForms(){
   postCreation.style.display='none';
@@ -783,14 +811,21 @@ function hideForms(){
   photoCreation.style.display='none';
 }
 
+function hideOverlays(){
+  groupsModal.classList.remove('show');
+  dataModal.classList.remove('show');
+  moderationModal.classList.remove('show');
+  reportsModal.classList.remove('show');
+}
+
 /* -----------------------
-   TOOLBAR HANDLERS
+   Toolbar handlers
 ----------------------- */
 document.getElementById('postsBtn').onclick = () => { hideOverlays(); hideForms(); postCreation.style.display='block'; };
 document.getElementById('quickPollBtn').onclick = () => { hideOverlays(); hideForms(); pollCreation.style.display='block'; };
 document.getElementById('photoUploadBtn').onclick = () => { hideOverlays(); hideForms(); photoCreation.style.display='block'; };
-document.getElementById('groupsBtn').onclick = () => { hideOverlays(); hideForms(); openGroups(); };
 
+document.getElementById('groupsBtn').onclick = () => { hideOverlays(); hideForms(); openGroups(); };
 document.getElementById('dataToolsBtn').onclick = () => { hideOverlays(); hideForms(); openDataTools(); };
 
 document.getElementById('moderationBtn').onclick = () => {
@@ -798,16 +833,17 @@ document.getElementById('moderationBtn').onclick = () => {
   hideOverlays(); hideForms(); openModeration();
 };
 
-document.getElementById('themeToggleBtn').onclick = toggleTheme;
+document.getElementById('reportsBtn').onclick = () => {
+  hideOverlays(); hideForms();
+  reportsModal.classList.add('show');
+};
 
+document.getElementById('themeToggleBtn').onclick = toggleTheme;
 document.getElementById('roleSelect').addEventListener('change', (e) => setRole(e.target.value));
 
-function hideOverlays(){
-  groupsModal.classList.remove('show');
-  dataModal.classList.remove('show');
-  moderationModal.classList.remove('show');
-}
-
+/* -----------------------
+   Groups
+----------------------- */
 function openGroups(){
   groupsContainer.innerHTML = '';
   groups.forEach(g => {
@@ -825,11 +861,10 @@ function openGroups(){
   });
   groupsModal.classList.add('show');
 }
-
 document.getElementById('groupsModalClose').onclick = () => groupsModal.classList.remove('show');
 
 /* -----------------------
-   DATA TOOLS: Export / Import (RBAC applied)
+   Data tools (export/import) with RBAC
 ----------------------- */
 function openDataTools(){
   document.getElementById('exportFormatHint').textContent = EXPORT_FORMAT;
@@ -844,18 +879,11 @@ document.getElementById('exportBtn').onclick = () => {
   const payload = {
     format: EXPORT_FORMAT,
     exported_at: nowIso(),
-    app_version: 3,
+    app_version: 4,
     data: { posts: posts.map(ensureModerationFields), groups }
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `cisco_social_export_${formatDate()}_v1.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  triggerDownload(blob, `cisco_social_export_${formatDate()}_v1.json`);
   showToast('Exported JSON.');
 };
 
@@ -892,7 +920,7 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
   } else {
     const postMap = new Map(posts.map(p => [p.id, p]));
     for (const p of incomingPosts) postMap.set(p.id, p);
-    posts = Array.from(postMap.values()).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+    posts = Array.from(postMap.values()).sort((a,b) => String(b.date||'').localeCompare(String(a.date||'')));
 
     const groupKey = (g) => g.id || `name:${(g.name||'').toLowerCase()}`;
     const groupMap = new Map(groups.map(g => [groupKey(g), g]));
@@ -913,7 +941,7 @@ document.getElementById('resetLocalBtn').onclick = () => {
 };
 
 /* -----------------------
-   MODERATION (RBAC applied)
+   Moderation
 ----------------------- */
 function moderationBadge(status){
   if (status === 'flagged') return '<span class="badge badge-flagged">🚩 Flagged</span>';
@@ -1039,7 +1067,201 @@ function previewItem(itemId){
 }
 
 /* -----------------------
-   FEED RENDERING
+   Reports (frontend-only)
+----------------------- */
+document.getElementById('reportsCloseBtn').onclick = () => reportsModal.classList.remove('show');
+document.getElementById('reportsCancelBtn').onclick = () => reportsModal.classList.remove('show');
+
+document.getElementById('reportsOkBtn').onclick = () => {
+  const dept = document.getElementById('reportDeptSelect').value;
+  const fmt  = document.getElementById('reportFormatSelect').value;
+
+  const report = buildFrontendReport(dept);
+
+  if (fmt === 'xls') downloadXls(report);
+  else downloadPdf(report);
+
+  showToast(`Generated ${dept} report (${fmt.toUpperCase()}).`);
+  reportsModal.classList.remove('show');
+};
+
+function matchesDept(item, dept) {
+  if (!dept || dept === 'All') return true;
+  const bu = Array.isArray(item?.bu) ? item.bu : ['All'];
+  return bu.includes('All') || bu.includes(dept);
+}
+
+function buildFrontendReport(dept) {
+  const allItems = (posts || []).map(ensureModerationFields);
+
+  const deptItems = allItems.filter(it => matchesDept(it, dept));
+  const activeItems  = deptItems.filter(it => it.moderation?.status === 'active');
+  const flaggedItems = deptItems.filter(it => it.moderation?.status === 'flagged');
+  const removedItems = deptItems.filter(it => it.moderation?.status === 'removed');
+
+  const postsOnly = deptItems.filter(it => it.type === 'post');
+  const pollsOnly = deptItems.filter(it => it.type === 'poll');
+
+  const recentActive = [...activeItems]
+    .sort((a,b) => String(b.date||'').localeCompare(String(a.date||'')))
+    .slice(0, 25)
+    .map(it => ({
+      type: it.type || 'item',
+      title: it.type === 'poll' ? (it.question || '(poll)') : (it.title || '(post)'),
+      author: it.author || 'Unknown',
+      date: it.date || '',
+      status: it.moderation?.status || 'active'
+    }));
+
+  return {
+    title: 'Cisco Social Department Report',
+    department: dept,
+    generated_at: new Date().toISOString(),
+    summary: {
+      total_items: deptItems.length,
+      active: activeItems.length,
+      flagged: flaggedItems.length,
+      removed: removedItems.length,
+      posts: postsOnly.length,
+      polls: pollsOnly.length
+    },
+    rows: recentActive
+  };
+}
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, m => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[m]));
+}
+
+function downloadXls(report) {
+  const stamp = report.generated_at.slice(0, 10);
+  const file = `cisco_social_report_${report.department}_${stamp}.xls`;
+
+  const rows = [];
+  rows.push(['Cisco Social Report', '', '', '', '']);
+  rows.push(['Department', report.department, '', '', '']);
+  rows.push(['Generated At', report.generated_at, '', '', '']);
+  rows.push(['', '', '', '', '']);
+  rows.push(['Summary', '', '', '', '']);
+  rows.push(['Total Items', report.summary.total_items, '', '', '']);
+  rows.push(['Active', report.summary.active, '', '', '']);
+  rows.push(['Flagged', report.summary.flagged, '', '', '']);
+  rows.push(['Removed', report.summary.removed, '', '', '']);
+  rows.push(['Posts', report.summary.posts, '', '', '']);
+  rows.push(['Polls', report.summary.polls, '', '', '']);
+  rows.push(['', '', '', '', '']);
+  rows.push(['Recent Active (Top 25)', '', '', '', '']);
+  rows.push(['Type', 'Title/Question', 'Author', 'Date', 'Status']);
+
+  for (const r of report.rows) {
+    rows.push([r.type, r.title, r.author, r.date, r.status]);
+  }
+
+  const table = `
+    <html><head><meta charset="utf-8"></head>
+    <body>
+      <table border="1" cellpadding="6" cellspacing="0">
+        ${rows.map(cols => `<tr>${cols.map(c => `<td>${escapeHtml(String(c ?? ''))}</td>`).join('')}</tr>`).join('')}
+      </table>
+    </body></html>
+  `;
+
+  const blob = new Blob([table], { type: 'application/vnd.ms-excel' });
+  triggerDownload(blob, file);
+}
+
+function downloadPdf(report) {
+  const stamp = report.generated_at.slice(0, 10);
+  const file = `cisco_social_report_${report.department}_${stamp}.pdf`;
+
+  const lines = [
+    report.title,
+    `Department: ${report.department}`,
+    `Generated: ${report.generated_at}`,
+    ``,
+    `Summary`,
+    `  Total Items: ${report.summary.total_items}`,
+    `  Active: ${report.summary.active}`,
+    `  Flagged: ${report.summary.flagged}`,
+    `  Removed: ${report.summary.removed}`,
+    `  Posts: ${report.summary.posts}`,
+    `  Polls: ${report.summary.polls}`,
+    ``,
+    `Recent Active (Top ${report.rows.length})`
+  ];
+
+  report.rows.forEach((r, i) => {
+    const t = truncate(r.title, 70);
+    lines.push(`  ${i+1}. [${r.type}] ${t} — ${r.author} (${r.date})`);
+  });
+
+  const bytes = buildSimplePdf(lines);
+  const blob = new Blob([bytes], { type:'application/pdf' });
+  triggerDownload(blob, file);
+}
+
+function truncate(s, n) {
+  s = String(s ?? '');
+  return s.length > n ? s.slice(0, n-1) + '…' : s;
+}
+
+/* Minimal one-page PDF writer */
+function buildSimplePdf(lines) {
+  const esc = (s) => String(s).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+
+  const pageW = 595, pageH = 842;
+  const left = 50;
+  let y = 790;
+  const lh = 14;
+
+  let content = 'BT\n/F1 12 Tf\n';
+  content += `${left} ${y} Td\n`;
+  lines.forEach((ln, i) => {
+    if (i !== 0) content += `0 -${lh} Td\n`;
+    content += `(${esc(ln)}) Tj\n`;
+  });
+  content += 'ET\n';
+
+  const enc = new TextEncoder();
+  const contentBytes = enc.encode(content);
+
+  const objects = [];
+  objects.push(`1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`);
+  objects.push(`2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n`);
+  objects.push(`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>\nendobj\n`);
+  objects.push(`4 0 obj\n<< /Length ${contentBytes.length} >>\nstream\n${content}endstream\nendobj\n`);
+  objects.push(`5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n`);
+
+  let pdf = `%PDF-1.4\n`;
+  const offsets = [0];
+  for (const obj of objects) { offsets.push(pdf.length); pdf += obj; }
+
+  const xrefStart = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n`;
+  pdf += `0000000000 65535 f \n`;
+  for (let i = 1; i <= objects.length; i++) {
+    pdf += `${String(offsets[i]).padStart(10,'0')} 00000 n \n`;
+  }
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+
+  return enc.encode(pdf);
+}
+
+function triggerDownload(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* -----------------------
+   Feed rendering
 ----------------------- */
 function postMatchesQuery(post){
   if (!activeQuery) return true;
@@ -1146,7 +1368,7 @@ function renderPoll(post, idx){
 }
 
 /* -----------------------
-   CREATE POST / POLL / PHOTO
+   Create post/poll/photo
 ----------------------- */
 function getSelectedValues(selectId){
   const options = Array.from(document.getElementById(selectId).selectedOptions).map(o => o.value);
@@ -1205,8 +1427,7 @@ document.getElementById('postSubmit').onclick = () => {
 
 document.getElementById('pollSubmit').onclick = () => {
   const question = document.getElementById('pollQuestion').value.trim();
-  const options = document.getElementById('pollOptions').value
-    .split('\n').map(o => o.trim()).filter(Boolean);
+  const options = document.getElementById('pollOptions').value.split('\n').map(o => o.trim()).filter(Boolean);
 
   if (!question || options.length < 2) { showToast('Add a poll question and at least 2 options.'); return; }
 
@@ -1240,7 +1461,6 @@ document.getElementById('photoFile').addEventListener('change', (e) => {
   const [file] = e.target.files || [];
   setPhotoFile(file);
 });
-
 const photoPreviewWrap = document.getElementById('photoPreviewWrap');
 
 function setPhotoFile(file){
@@ -1267,7 +1487,6 @@ function setPhotoFile(file){
   return true;
 }
 
-// Drag/drop
 ['dragenter','dragover'].forEach(evt => photoPreviewWrap.addEventListener(evt, (e) => {
   e.preventDefault(); e.stopPropagation();
   photoPreviewWrap.style.borderColor = 'var(--brand)';
@@ -1312,78 +1531,39 @@ document.getElementById('photoSubmit').onclick = () => {
 };
 
 /* -----------------------
-   GLOBAL ESC + OUTSIDE CLICK
+   Modal close: outside click + ESC
 ----------------------- */
 window.addEventListener('click', (e) => {
   if (e.target === groupsModal) groupsModal.classList.remove('show');
   if (e.target === dataModal) dataModal.classList.remove('show');
   if (e.target === moderationModal) moderationModal.classList.remove('show');
+  if (e.target === reportsModal) reportsModal.classList.remove('show');
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') hideOverlays();
 });
 
 /* -----------------------
-   BOOT
+   Boot
 ----------------------- */
-function loadPolicyBanner(){
-  const dismissed = localStorage.getItem(POLICY_KEY) === '1';
-  document.getElementById('policyBanner').style.display = dismissed ? 'none' : 'flex';
-}
-
 loadTheme();
 loadState();
 posts = posts.map(ensureModerationFields);
 loadPolicyBanner();
 
-// Role
 loadRole();
 applyRbacToUi();
 
 saveState();
 renderPosts();
 
-// Expose for inline onclick usage
+// expose for inline onclick handlers
 window.reportItem = reportItem;
 window.approveItem = approveItem;
 window.removeItem = removeItem;
 window.previewItem = previewItem;
-
 </script>
 
-<!--
-=========================================================
-DOCS UPDATE PACK ADDENDUM — RBAC
-=========================================================
-
-# Feature: RBAC (Role-Based Access Control)
-
-## Roles
-- Employee
-- Moderator
-- Admin
-
-## Permissions Matrix
-| Action | Employee | Moderator | Admin |
-|--------|----------|-----------|-------|
-| Report content | ✅ | ✅ | ✅ |
-| Export JSON | ✅ | ✅ | ✅ |
-| View moderation queue | ❌ | ✅ | ✅ |
-| Approve / Remove content | ❌ | ✅ | ✅ |
-| Import JSON | ❌ | ❌ | ✅ |
-| Reset local data | ❌ | ❌ | ✅ |
-
-## Enforcement Points
-- UI: disable/hide buttons based on permission
-- Runtime: requirePerm(permission) gates the action handler
-- Note: For production, enforce server-side too (do not rely on client RBAC)
-
-## Identity Assumptions (Demo)
-- Role is chosen in the UI and stored in localStorage (ROLE_KEY)
-- Replace with SSO/OIDC claims (groups/roles) in production
-
-=========================================================
--->
 </body>
 </html>
 
