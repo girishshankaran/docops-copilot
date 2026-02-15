@@ -369,23 +369,17 @@ const buildPatchFromContent = (docPath: string, oldContent: string, newContent: 
     const newPath = path.join(tmpRoot, 'new.md');
     fs.writeFileSync(oldPath, oldContent, 'utf8');
     fs.writeFileSync(newPath, newContent, 'utf8');
-    const res = spawnSync('git', ['diff', '--no-index', '--unified=3', oldPath, newPath], { encoding: 'utf8' });
+    const res = spawnSync(
+      'diff',
+      ['-u', '--label', `a/${docPath}`, '--label', `b/${docPath}`, oldPath, newPath],
+      { encoding: 'utf8' },
+    );
     if (res.status !== 0 && res.status !== 1) {
-      throw new Error(res.stderr?.trim() || `git diff failed with status ${res.status}`);
+      throw new Error(res.stderr?.trim() || `diff failed with status ${res.status}`);
     }
     const raw = (res.stdout || '').trim();
     if (!raw) return undefined;
-    const lines = raw.split('\n');
-    const hunkStart = lines.findIndex((l) => l.startsWith('@@ '));
-    if (hunkStart < 0) return undefined;
-    const hunks = lines.slice(hunkStart).join('\n');
-    const patch = [
-      `diff --git a/${docPath} b/${docPath}`,
-      `--- a/${docPath}`,
-      `+++ b/${docPath}`,
-      hunks,
-    ].join('\n');
-    return patch;
+    return [`diff --git a/${docPath} b/${docPath}`, raw].join('\n');
   } finally {
     fs.rmSync(tmpRoot, { recursive: true, force: true });
   }
@@ -407,6 +401,41 @@ const buildReplaceAllPatch = (docPath: string, oldContent: string, newContent: s
     `@@ -1,${oldCount} +1,${newCount} @@`,
     body,
   ].join('\n');
+};
+
+const buildDeterministicUiDocUpdate = (docContent: string, combinedDiff: string): string => {
+  const added = combinedDiff
+    .split(/\r?\n/)
+    .filter((l) => l.startsWith('+') && !l.startsWith('+++'))
+    .map((l) => l.slice(1).trim())
+    .filter(Boolean)
+    .slice(0, 8);
+  const removed = combinedDiff
+    .split(/\r?\n/)
+    .filter((l) => l.startsWith('-') && !l.startsWith('---'))
+    .map((l) => l.slice(1).trim())
+    .filter(Boolean)
+    .slice(0, 8);
+  const ts = new Date().toISOString().slice(0, 19) + 'Z';
+  const lines: string[] = [];
+  lines.push('## Automated UI Sync Notes');
+  lines.push('');
+  lines.push(`Last synced from \`ui/home1.html\` at ${ts}.`);
+  if (added.length) {
+    lines.push('');
+    lines.push('### Added UI lines');
+    for (const a of added) lines.push(`- \`${a}\``);
+  }
+  if (removed.length) {
+    lines.push('');
+    lines.push('### Removed UI lines');
+    for (const r of removed) lines.push(`- \`${r}\``);
+  }
+  const block = lines.join('\n');
+  if (docContent.includes('## Automated UI Sync Notes')) {
+    return docContent.replace(/## Automated UI Sync Notes[\s\S]*$/m, block);
+  }
+  return `${docContent.trim()}\n\n${block}\n`;
 };
 
 const buildMockPatch = (docPath: string): string =>
@@ -457,6 +486,7 @@ interface TargetDebugReport {
   fullDocResponsePreview?: string;
   contentPatchPreview?: string;
   replaceAllPatchUsed?: boolean;
+  deterministicUiFallbackUsed?: boolean;
 }
 
 const main = async () => {
@@ -633,6 +663,31 @@ const main = async () => {
         targetDebug.contentPatchPreview = contentPatch.slice(0, 12000);
         patch = normalizePatch(target.docsPath, docContent, contentPatch);
       } catch (fallbackErr) {
+        if (target.docsPath === 'docs/ui/home1.md') {
+          try {
+            const deterministicDoc = buildDeterministicUiDocUpdate(docContent, combinedDiff);
+            const deterministicPatch = buildPatchFromContent(target.docsPath, docContent, deterministicDoc);
+            if (deterministicPatch) {
+              targetDebug.deterministicUiFallbackUsed = true;
+              targetDebug.contentPatchPreview = deterministicPatch.slice(0, 12000);
+              patch = normalizePatch(target.docsPath, docContent, deterministicPatch);
+              debugReport.targets.push(targetDebug);
+              writeSuggestionFiles(outDir, target.docsPath, patch);
+              collected.push({ docPath: target.docsPath, patch, matchedFiles: target.matchedFiles });
+              runReport.targets.push({
+                docPath: target.docsPath,
+                matchedFiles: target.matchedFiles,
+                status: 'generated',
+                strictRetry,
+                contentFallback: true,
+              });
+              continue;
+            }
+          } catch (detErr) {
+            targetDebug.deterministicUiFallbackUsed = true;
+            targetDebug.contentPatchPreview = `deterministic-ui-fallback-error: ${(detErr as Error).message}`;
+          }
+        }
         debugReport.targets.push(targetDebug);
         const reason = `${(primaryErr as Error).message}; fallback failed: ${(fallbackErr as Error).message}`;
         console.warn(`Skipping ${target.docsPath}: ${reason}`);
