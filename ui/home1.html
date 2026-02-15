@@ -11,12 +11,14 @@
       --bg:#eef3f8; --surface:#ffffff; --text:#12324f; --muted:#58708a;
       --ring:rgba(15,94,168,.25); --shadow:0 8px 24px rgba(6,28,52,.12);
       --border:#c7d4e2; --divider:#eee; --danger:#b3261e; --warn:#b86b00;
+      --disabled: rgba(120, 140, 160, .35);
     }
     html[data-theme="dark"]{
       --bg:#0b1621; --surface:#0f2233; --text:#e8f1fb; --muted:#a6bdd6;
       --ring:rgba(0,188,235,.28); --shadow:0 10px 28px rgba(0,0,0,.35);
       --border:rgba(180,205,230,.22); --divider:rgba(180,205,230,.14);
       --danger:#ff6b6b; --warn:#ffb020;
+      --disabled: rgba(180,205,230,.18);
     }
     *{box-sizing:border-box}
     body{
@@ -44,11 +46,10 @@
     .search-bar input{
       padding:.55rem .8rem; font-size:1rem; border-radius:8px;
       border:1px solid rgba(255,255,255,.55);
-      width:min(340px,42vw);
+      width:min(320px,40vw);
       outline:none;
       color:var(--text);
     }
-    .search-bar input:focus{box-shadow:0 0 0 3px rgba(255,255,255,.35)}
     .theme-btn{
       cursor:pointer;
       border:1px solid rgba(255,255,255,.65);
@@ -61,6 +62,31 @@
       white-space:nowrap;
     }
     .theme-btn:hover{background:rgba(255,255,255,.22)}
+    .role-chip{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      border:1px solid rgba(255,255,255,.65);
+      background:rgba(255,255,255,.12);
+      padding:6px 10px;
+      border-radius:12px;
+      font-weight:800;
+      white-space:nowrap;
+    }
+    .role-chip select{
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.65);
+      background:rgba(255,255,255,.16);
+      color:#fff;
+      padding:6px 10px;
+      font-weight:900;
+      outline:none;
+      cursor:pointer;
+    }
+    .role-chip select option{
+      color:#0b1621;
+    }
+
     .container{display:flex; padding:1.5rem; gap:2rem; max-width:1400px; margin:0 auto}
     .main-feed{
       flex:3;
@@ -87,6 +113,7 @@
       border-bottom:2px solid rgba(15,94,168,.26);
       margin-bottom:1rem;
     }
+
     button{
       cursor:pointer;
       background:var(--brand);
@@ -95,21 +122,26 @@
       padding:7px 12px;
       border-radius:6px;
       font-size:.9rem;
-      transition:background-color .2s;
+      transition:background-color .2s, opacity .2s;
       user-select:none;
     }
     button:hover{background:var(--brand-strong)}
-    button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{
-      outline:3px solid var(--ring); outline-offset:1px;
+    button:disabled{
+      cursor:not-allowed;
+      opacity:.55;
+      background:var(--disabled);
     }
+
     .btn-secondary{background:#6d839b}
     .btn-secondary:hover{background:#556c86}
     .btn-danger{background:var(--danger)}
     .btn-danger:hover{filter:brightness(.9)}
     .btn-warn{background:var(--warn)}
     .btn-warn:hover{filter:brightness(.92)}
+
     .actions{display:flex; gap:1rem; margin-bottom:1rem; flex-wrap:wrap; align-items:center}
     .actions button{flex:1 1 140px; font-weight:600; min-width:120px}
+
     .feed-tools{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px}
     .feed-status{margin:0; color:var(--muted); font-size:.9rem; font-weight:600}
     .pill{
@@ -127,6 +159,7 @@
       border-color:rgba(0,188,235,.25);
       color:#bfefff;
     }
+
     .policy-banner{
       margin:10px 0 14px;
       border:1px solid rgba(0,0,0,.08);
@@ -145,6 +178,7 @@
     .policy-banner strong{color:var(--brand-strong)}
     .policy-banner .tiny{color:var(--muted); font-size:.85rem; font-weight:600}
     .policy-banner button{padding:6px 10px; font-size:.85rem; border-radius:10px}
+
     .post,.poll{margin-bottom:1.2rem; padding-bottom:8px; border-bottom:1px solid var(--divider)}
     .post h3,.poll-question{margin:.2rem 0 .5rem; color:var(--brand-strong)}
     .post time,.poll time{font-size:.85rem; color:var(--muted); margin-left:8px}
@@ -159,6 +193,7 @@
       user-select:none;
     }
     html[data-theme="dark"] .post-tags span{background:rgba(0,188,235,.18); color:#bfefff}
+
     .poll-block{
       background:rgba(236,244,254,.92);
       padding:10px;
@@ -170,6 +205,7 @@
     .poll-results{color:var(--brand-strong); font-weight:600}
     html[data-theme="dark"] .poll-results{color:#bfefff}
     .poll-results span{margin-right:20px; font-size:.9rem}
+
     .modal{
       display:none;
       position:fixed;
@@ -186,7 +222,7 @@
       background:var(--surface);
       width:860px;
       max-width:96vw;
-      padding:18px 18px;
+      padding:18px;
       border-radius:14px;
       box-shadow:var(--shadow);
       border:1px solid var(--border);
@@ -204,6 +240,7 @@
     }
     .close-btn:hover{color:#666; background:rgba(0,0,0,.06)}
     html[data-theme="dark"] .close-btn:hover{background:rgba(255,255,255,.08)}
+
     .content-input{
       width:100%;
       padding:8px;
@@ -215,6 +252,7 @@
       color:var(--text);
     }
     .content-actions{display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap}
+
     .post-image{
       margin-top:10px;
       max-width:min(560px,100%);
@@ -222,6 +260,7 @@
       box-shadow:0 6px 16px rgba(8,30,56,.18);
     }
     .empty-state{color:var(--muted); font-weight:600; padding:8px 0}
+
     .toast{
       position:fixed;
       right:16px;
@@ -238,10 +277,12 @@
       z-index:1200;
     }
     .toast.show{opacity:1; transform:translateY(0)}
+
     .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
     .muted{color:var(--muted); font-weight:600}
     .small{font-size:.9rem}
     .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
+
     .table{
       width:100%;
       border-collapse:collapse;
@@ -258,6 +299,7 @@
     }
     .table th{background:rgba(15,94,168,.06); color:var(--brand-strong)}
     html[data-theme="dark"] .table th{background:rgba(0,188,235,.08); color:#bfefff}
+
     .badge{
       display:inline-flex; align-items:center; gap:6px;
       font-size:.8rem;
@@ -272,17 +314,7 @@
     .badge-flagged{color:var(--warn); border-color:rgba(184,107,0,.35)}
     .badge-removed{color:var(--danger); border-color:rgba(179,38,30,.35)}
     .badge-active{color:var(--success); border-color:rgba(13,143,95,.35)}
-    .kbd{
-      font-family:inherit;
-      font-size:.82rem;
-      font-weight:800;
-      padding:2px 6px;
-      border-radius:6px;
-      border:1px solid rgba(0,0,0,.15);
-      background:rgba(255,255,255,.65);
-      color:var(--text);
-    }
-    html[data-theme="dark"] .kbd{border-color:rgba(180,205,230,.18); background:rgba(0,0,0,.18)}
+
     @media (max-width:1000px){
       .container{flex-direction:column; padding:1rem}
       .main-feed{max-height:none}
@@ -300,11 +332,22 @@
 
 <body>
 <header>
-  <h1>Cisco Social App</h1>
+  <h1>Cisco Social</h1>
   <div class="header-right">
     <div class="search-bar">
       <input id="globalSearch" type="search" placeholder="Search posts, polls, people..." />
     </div>
+
+    <!-- RBAC: Role selector (demo login) -->
+    <div class="role-chip" title="Demo RBAC: choose your role">
+      <span>Role</span>
+      <select id="roleSelect" aria-label="Select role">
+        <option value="employee">Employee</option>
+        <option value="moderator">Moderator</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+
     <button id="themeToggleBtn" class="theme-btn" aria-label="Toggle dark mode">🌙 Dark</button>
   </div>
 </header>
@@ -315,17 +358,17 @@
       <div style="font-size:18px;">🛡️</div>
       <div style="flex:1;">
         <div><strong>Content policy:</strong> Be respectful. Don’t share confidential data, personal info, or harassment.</div>
-        <div class="tiny">Use <span class="kbd">🚩 Report</span> on a post if it violates policy. Moderators may remove content.</div>
+        <div class="tiny">Use <span class="mono">🚩 Report</span> on a post if it violates policy. Moderators may remove content.</div>
       </div>
       <button class="btn-secondary" id="dismissPolicyBtn">Dismiss</button>
     </div>
+/poll
 
     <div class="actions">
       <button id="postsBtn">Posts</button>
       <button id="groupsBtn">Groups</button>
       <button id="photoUploadBtn">Upload Photo</button>
-      <button id="quickPollBtn">Quick Polling</button>
-      <button id="insightsBtn">Insights Dashboard</button>
+      <button id="quickPollBtn">Quick Poll</button>
       <button id="dataToolsBtn">Data Tools</button>
       <button id="moderationBtn">Moderation</button>
     </div>
@@ -356,7 +399,7 @@
     </div>
 
     <div id="pollCreation" style="display:none; margin-top:1rem;">
-      <h3>Create Quick Polling</h3>
+      <h3>Create Quick Poll</h3>
       <input id="pollQuestion" class="content-input" placeholder="Poll question" />
       <textarea id="pollOptions" class="content-input" placeholder="One option per line" style="height:90px"></textarea>
       <select id="pollBU" multiple class="content-input">
@@ -394,13 +437,6 @@
     </div>
   </main>
 
-  <aside class="sidebar">
-    <section class="section">
-      <h2>Upcoming Events</h2>
-      <div>Wellness Webinar - Aug 25 <button>RSVP</button></div>
-      <div>Team Coffee Chat - Aug 22 <button>RSVP</button></div>
-      <div>Cisco Content Expo - March 2026 <button>RSVP</button></div>
-    </section>
 
     <section class="section">
       <h2>Job Opportunities</h2>
@@ -418,20 +454,18 @@
   </aside>
 </div>
 
-<!-- Groups Modal (kept simple) -->
+<!-- Groups Modal -->
 <div id="groupsModal" class="modal">
   <div class="modal-content">
     <div class="modal-head">
-      <div class="row">
-        <h2 style="margin:0;">Groups</h2>
-      </div>
+      <h2 style="margin:0;">Groups</h2>
       <button id="groupsModalClose" class="close-btn" aria-label="Close groups">&times;</button>
     </div>
     <div id="groupsContainer"></div>
   </div>
 </div>
 
-<!-- Data Tools Modal (Export/Import) -->
+<!-- Data Tools Modal -->
 <div id="dataModal" class="modal">
   <div class="modal-content">
     <div class="modal-head">
@@ -473,9 +507,7 @@
       <button id="resetLocalBtn" class="btn-danger">Reset Local Data</button>
     </div>
 
-    <div class="muted small" style="margin-top:10px;">
-      Tip: export regularly before large changes.
-    </div>
+    <div class="muted small" id="dataToolsRbacHint" style="margin-top:10px;"></div>
   </div>
 </div>
 
@@ -516,24 +548,27 @@
       <tbody id="moderationTableBody"></tbody>
     </table>
 
-    <div class="muted small" style="margin-top:10px;">
-      Note: This is a local-only moderation workflow for the demo UI. For production, connect to a backend + RBAC.
-    </div>
+    <div class="muted small" style="margin-top:10px;" id="moderationRbacHint"></div>
   </div>
 </div>
 
 <script>
 /**
- * OPTION C IMPLEMENTATION:
- * - Export / Import JSON (versioned)
- * - Moderation workflow: report -> flagged -> approve/remove
- * - Policy banner
- * - Persistence in localStorage
+ * OPTION C + RBAC (demo):
+ * - Roles: employee | moderator | admin
+ * - Permissions:
+ *   - Report: all roles
+ *   - Open moderation: moderator/admin
+ *   - Approve/remove: moderator/admin
+ *   - Export: all roles
+ *   - Import: admin only
+ *   - Reset local: admin only
  */
 
-const STORAGE_KEY = 'cisco_social_state_v2';
+const STORAGE_KEY = 'cisco_social_state_v3';
 const THEME_KEY   = 'cisco_social_theme_v1';
 const POLICY_KEY  = 'cisco_social_policy_dismissed_v1';
+const ROLE_KEY    = 'cisco_social_role_v1';
 const EXPORT_FORMAT = 'cisco_social_export_v1';
 
 function safeJsonParse(text, fallback) { try { return JSON.parse(text); } catch { return fallback; } }
@@ -545,7 +580,6 @@ function sanitize(str){
 }
 
 let toastTimer;
-
 function showToast(message) {
   let toast = document.getElementById('appToast');
   if (!toast) {
@@ -558,6 +592,77 @@ function showToast(message) {
   toast.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+/* -----------------------
+   RBAC
+----------------------- */
+const Roles = Object.freeze({
+  employee: 'employee',
+  moderator: 'moderator',
+  admin: 'admin'
+});
+
+const Permissions = Object.freeze({
+  REPORT: 'report',
+  MOD_VIEW: 'mod_view',
+  MOD_ACTION: 'mod_action',
+  EXPORT: 'export',
+  IMPORT: 'import',
+  RESET: 'reset'
+});
+
+const RolePermissions = Object.freeze({
+  [Roles.employee]: new Set([Permissions.REPORT, Permissions.EXPORT]),
+  [Roles.moderator]: new Set([Permissions.REPORT, Permissions.EXPORT, Permissions.MOD_VIEW, Permissions.MOD_ACTION]),
+  [Roles.admin]: new Set([Permissions.REPORT, Permissions.EXPORT, Permissions.MOD_VIEW, Permissions.MOD_ACTION, Permissions.IMPORT, Permissions.RESET])
+});
+
+let currentRole = Roles.employee;
+
+function loadRole(){
+  const saved = localStorage.getItem(ROLE_KEY);
+  currentRole = (saved && RolePermissions[saved]) ? saved : Roles.employee;
+  const sel = document.getElementById('roleSelect');
+  sel.value = currentRole;
+}
+
+function setRole(role){
+  if (!RolePermissions[role]) return;
+  currentRole = role;
+  localStorage.setItem(ROLE_KEY, role);
+  applyRbacToUi();
+  showToast(`Role set to: ${role}`);
+}
+
+function can(permission){
+  return RolePermissions[currentRole]?.has(permission) || false;
+}
+
+function requirePerm(permission, denialMsg){
+  if (can(permission)) return true;
+  showToast(denialMsg || 'Not permitted.');
+  return false;
+}
+
+function applyRbacToUi(){
+  // Moderation button
+  const modBtn = document.getElementById('moderationBtn');
+  modBtn.disabled = !can(Permissions.MOD_VIEW);
+  modBtn.title = can(Permissions.MOD_VIEW) ? 'Open moderation queue' : 'Moderator/Admin only';
+
+  // Data Tools are visible to all, but restrict Import/Reset inside modal
+  const importBtn = document.getElementById('importBtn');
+  const resetBtn = document.getElementById('resetLocalBtn');
+
+  importBtn.disabled = !can(Permissions.IMPORT);
+  resetBtn.disabled = !can(Permissions.RESET);
+
+  document.getElementById('dataToolsRbacHint').textContent =
+    `RBAC: Export is allowed for everyone. Import/Reset are Admin only. Current role: ${currentRole}.`;
+
+  document.getElementById('moderationRbacHint').textContent =
+    `RBAC: Approve/Remove are allowed for Moderator/Admin. Current role: ${currentRole}.`;
 }
 
 /* -----------------------
@@ -584,31 +689,13 @@ function updateThemeToggleLabel(){
 }
 
 /* -----------------------
-   DATA MODEL (local-only)
+   DATA MODEL
 ----------------------- */
-
-const employees = [
-  { name: 'Emma L.', skills: ['Marketing','AI'] },
-  { name: 'Raj S.', skills: ['Engineering','Machine Learning'] },
-  { name: 'Sara P.', skills: ['HR'] },
-  { name: 'David K.', skills: ['Engineering','AI'] },
-  { name: 'Alice R.', skills: ['UX Design','AI'] },
-  { name: 'John M.', skills: ['Marketing'] }
-];
-
 let groups = [
   { id: uid('grp'), name: "AI Engineers", members: ["Raj S.","David K."], webex: "https://webex.com/meet/ai-engineers" },
   { id: uid('grp'), name: "UX Designers", members: ["Alice R."], webex: "https://webex.com/meet/ux-designers" }
 ];
 
-/**
- * Feed item structure (post/poll)
- * {
- *   id, type, author, date,
- *   ...content fields...
- *   moderation: { status: 'active'|'flagged'|'removed', flags: [ {by, reason, at} ] }
- * }
- */
 let posts = [
   {
     id: uid('post'),
@@ -640,22 +727,6 @@ let activeQuery = '';
 /* -----------------------
    PERSISTENCE
 ----------------------- */
-function saveState(){
-  const state = { version: 2, posts, groups };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-function loadState(){
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return;
-  const state = safeJsonParse(raw, null);
-  if (!state) return;
-
-  // Minimal migration support
-  if (Array.isArray(state.posts)) posts = state.posts.map(ensureModerationFields);
-  if (Array.isArray(state.groups)) groups = state.groups;
-
-  // If older v1 exists somewhere else, you can optionally add migration here.
-}
 function ensureModerationFields(item){
   if (!item || typeof item !== 'object') return item;
   if (!item.id) item.id = uid(item.type || 'item');
@@ -663,6 +734,18 @@ function ensureModerationFields(item){
   if (!item.moderation.status) item.moderation.status = 'active';
   if (!Array.isArray(item.moderation.flags)) item.moderation.flags = [];
   return item;
+}
+function saveState(){
+  const state = { version: 3, posts, groups };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+function loadState(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+  const state = safeJsonParse(raw, null);
+  if (!state) return;
+  if (Array.isArray(state.posts)) posts = state.posts.map(ensureModerationFields);
+  if (Array.isArray(state.groups)) groups = state.groups;
 }
 
 /* -----------------------
@@ -707,16 +790,17 @@ document.getElementById('postsBtn').onclick = () => { hideOverlays(); hideForms(
 document.getElementById('quickPollBtn').onclick = () => { hideOverlays(); hideForms(); pollCreation.style.display='block'; };
 document.getElementById('photoUploadBtn').onclick = () => { hideOverlays(); hideForms(); photoCreation.style.display='block'; };
 document.getElementById('groupsBtn').onclick = () => { hideOverlays(); hideForms(); openGroups(); };
-document.getElementById('insightsBtn').onclick = () => {
-  hideOverlays();
-  hideForms();
-  const activePosts = posts.filter(p => p.status !== 'removed').length;
-  const groupsCount = groups.length;
-  showToast(`Insights: ${activePosts} active posts, ${groupsCount} groups.`);
-};
+
 document.getElementById('dataToolsBtn').onclick = () => { hideOverlays(); hideForms(); openDataTools(); };
-document.getElementById('moderationBtn').onclick = () => { hideOverlays(); hideForms(); openModeration(); };
+
+document.getElementById('moderationBtn').onclick = () => {
+  if (!requirePerm(Permissions.MOD_VIEW, 'Moderation is available to Moderator/Admin only.')) return;
+  hideOverlays(); hideForms(); openModeration();
+};
+
 document.getElementById('themeToggleBtn').onclick = toggleTheme;
+
+document.getElementById('roleSelect').addEventListener('change', (e) => setRole(e.target.value));
 
 function hideOverlays(){
   groupsModal.classList.remove('show');
@@ -745,23 +829,23 @@ function openGroups(){
 document.getElementById('groupsModalClose').onclick = () => groupsModal.classList.remove('show');
 
 /* -----------------------
-   DATA TOOLS: Export / Import
+   DATA TOOLS: Export / Import (RBAC applied)
 ----------------------- */
 function openDataTools(){
   document.getElementById('exportFormatHint').textContent = EXPORT_FORMAT;
   dataModal.classList.add('show');
+  applyRbacToUi();
 }
 document.getElementById('dataCloseBtn').onclick = () => dataModal.classList.remove('show');
 
 document.getElementById('exportBtn').onclick = () => {
+  if (!requirePerm(Permissions.EXPORT, 'Export is not permitted.')) return;
+
   const payload = {
     format: EXPORT_FORMAT,
     exported_at: nowIso(),
-    app_version: 2,
-    data: {
-      posts: posts.map(ensureModerationFields),
-      groups
-    }
+    app_version: 3,
+    data: { posts: posts.map(ensureModerationFields), groups }
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
   const url = URL.createObjectURL(blob);
@@ -775,11 +859,16 @@ document.getElementById('exportBtn').onclick = () => {
   showToast('Exported JSON.');
 };
 
-document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
+document.getElementById('importBtn').onclick = () => {
+  if (!requirePerm(Permissions.IMPORT, 'Import is Admin only.')) return;
+  document.getElementById('importFile').click();
+};
 
 document.getElementById('importFile').addEventListener('change', async (e) => {
+  if (!requirePerm(Permissions.IMPORT, 'Import is Admin only.')) { e.target.value=''; return; }
+
   const file = e.target.files?.[0];
-  e.target.value = ''; // reset
+  e.target.value = '';
   if (!file) return;
 
   const text = await file.text();
@@ -791,19 +880,16 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
 
   const incomingPosts  = Array.isArray(payload.data.posts) ? payload.data.posts.map(ensureModerationFields) : null;
   const incomingGroups = Array.isArray(payload.data.groups) ? payload.data.groups : null;
-
   if (!incomingPosts || !incomingGroups) {
     showToast('Invalid export file (missing posts/groups).');
     return;
   }
 
   const mode = document.querySelector('input[name="importMode"]:checked')?.value || 'merge';
-
   if (mode === 'replace') {
     posts = incomingPosts;
     groups = incomingGroups;
   } else {
-    // Merge by ID (posts) and group ID/name (groups)
     const postMap = new Map(posts.map(p => [p.id, p]));
     for (const p of incomingPosts) postMap.set(p.id, p);
     posts = Array.from(postMap.values()).sort((a,b) => (b.date||'').localeCompare(a.date||''));
@@ -820,16 +906,15 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
 });
 
 document.getElementById('resetLocalBtn').onclick = () => {
+  if (!requirePerm(Permissions.RESET, 'Reset is Admin only.')) return;
   if (!confirm('This will erase local saved data. Continue?')) return;
   localStorage.removeItem(STORAGE_KEY);
-  // Keep theme + policy dismissal as-is
   location.reload();
 };
 
 /* -----------------------
-   MODERATION
+   MODERATION (RBAC applied)
 ----------------------- */
-
 function moderationBadge(status){
   if (status === 'flagged') return '<span class="badge badge-flagged">🚩 Flagged</span>';
   if (status === 'removed') return '<span class="badge badge-removed">🗑 Removed</span>';
@@ -837,6 +922,8 @@ function moderationBadge(status){
 }
 
 function reportItem(itemId){
+  if (!requirePerm(Permissions.REPORT, 'Reporting is not permitted.')) return;
+
   const item = posts.find(p => p.id === itemId);
   if (!item) return;
 
@@ -844,7 +931,7 @@ function reportItem(itemId){
   item.moderation = item.moderation || { status:'active', flags:[] };
   item.moderation.status = 'flagged';
   item.moderation.flags = item.moderation.flags || [];
-  item.moderation.flags.unshift({ by:'demo-user', reason: reason || 'Policy violation', at: nowIso() });
+  item.moderation.flags.unshift({ by: currentRole, reason: reason || 'Policy violation', at: nowIso() });
 
   saveState();
   renderPosts();
@@ -852,6 +939,8 @@ function reportItem(itemId){
 }
 
 function approveItem(itemId){
+  if (!requirePerm(Permissions.MOD_ACTION, 'Approve/Remove is Moderator/Admin only.')) return;
+
   const item = posts.find(p => p.id === itemId);
   if (!item) return;
   item.moderation.status = 'active';
@@ -862,6 +951,8 @@ function approveItem(itemId){
 }
 
 function removeItem(itemId){
+  if (!requirePerm(Permissions.MOD_ACTION, 'Approve/Remove is Moderator/Admin only.')) return;
+
   const item = posts.find(p => p.id === itemId);
   if (!item) return;
   item.moderation.status = 'removed';
@@ -874,6 +965,7 @@ function removeItem(itemId){
 function openModeration(){
   moderationModal.classList.add('show');
   renderModerationTable();
+  applyRbacToUi();
 }
 document.getElementById('moderationCloseBtn').onclick = () => moderationModal.classList.remove('show');
 document.getElementById('showRemovedToggle').onchange = renderModerationTable;
@@ -910,6 +1002,10 @@ function renderModerationTable(){
          <div class="muted small">Reason: ${sanitize(lastFlag.reason || '—')}</div></div>`
       : `<div class="muted small">—</div>`;
 
+    const actionsDisabled = !can(Permissions.MOD_ACTION);
+    const approveDisabledAttr = actionsDisabled ? 'disabled' : '';
+    const removeDisabledAttr  = actionsDisabled ? 'disabled' : '';
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${moderationBadge(item.moderation.status)}</td>
@@ -922,9 +1018,10 @@ function renderModerationTable(){
       <td>
         <div class="row" style="justify-content:flex-end;">
           <button class="btn-secondary" onclick="previewItem('${sanitize(item.id)}')">Preview</button>
-          <button onclick="approveItem('${sanitize(item.id)}')">Approve</button>
-          <button class="btn-danger" onclick="removeItem('${sanitize(item.id)}')">Remove</button>
+          <button ${approveDisabledAttr} onclick="approveItem('${sanitize(item.id)}')">Approve</button>
+          <button class="btn-danger" ${removeDisabledAttr} onclick="removeItem('${sanitize(item.id)}')">Remove</button>
         </div>
+        ${actionsDisabled ? `<div class="muted small" style="margin-top:6px;">Moderator/Admin only</div>` : ''}
       </td>
     `;
     moderationTableBody.appendChild(tr);
@@ -938,14 +1035,12 @@ function previewItem(itemId){
   const body  = item.type === 'poll'
     ? `Poll options:\n- ${(item.options||[]).join('\n- ')}`
     : item.content;
-
   alert(`Preview\n\n${title}\n\n${body}`);
 }
 
 /* -----------------------
    FEED RENDERING
 ----------------------- */
-
 function postMatchesQuery(post){
   if (!activeQuery) return true;
   const q = activeQuery.toLowerCase();
@@ -961,7 +1056,6 @@ function renderPosts(){
   postsContainer.innerHTML = '';
   posts = posts.map(ensureModerationFields);
 
-  // Hide removed + flagged from normal feed (flagged stays hidden until approved)
   const visible = posts
     .filter(p => p.moderation.status === 'active')
     .filter(postMatchesQuery);
@@ -1232,14 +1326,24 @@ document.addEventListener('keydown', (e) => {
 /* -----------------------
    BOOT
 ----------------------- */
+function loadPolicyBanner(){
+  const dismissed = localStorage.getItem(POLICY_KEY) === '1';
+  document.getElementById('policyBanner').style.display = dismissed ? 'none' : 'flex';
+}
+
 loadTheme();
 loadState();
 posts = posts.map(ensureModerationFields);
 loadPolicyBanner();
-saveState();     // ensures we persist migrations (ids/mod fields)
+
+// Role
+loadRole();
+applyRbacToUi();
+
+saveState();
 renderPosts();
 
-// Expose moderation funcs for inline onclick handlers
+// Expose for inline onclick usage
 window.reportItem = reportItem;
 window.approveItem = approveItem;
 window.removeItem = removeItem;
@@ -1249,88 +1353,37 @@ window.previewItem = previewItem;
 
 <!--
 =========================================================
-DOCS UPDATE PACK (Option C) — paste into your project docs
+DOCS UPDATE PACK ADDENDUM — RBAC
 =========================================================
 
-# Feature: Data Portability + Moderation Workflow
+# Feature: RBAC (Role-Based Access Control)
 
-## Overview
-Adds JSON export/import and a local moderation workflow:
-- Users can report content from the feed.
-- Reported content enters moderation queue (flagged).
-- Moderators can approve (restore) or remove (hide).
-- Export/import includes moderation state.
+## Roles
+- Employee
+- Moderator
+- Admin
 
-## User Stories
-- As a user, I can export my feed/groups as a JSON file.
-- As a user, I can import a JSON export to restore/transfer my data.
-- As a user, I can report a post/poll that violates policy.
-- As a moderator, I can review reported items and approve/remove them.
+## Permissions Matrix
+| Action | Employee | Moderator | Admin |
+|--------|----------|-----------|-------|
+| Report content | ✅ | ✅ | ✅ |
+| Export JSON | ✅ | ✅ | ✅ |
+| View moderation queue | ❌ | ✅ | ✅ |
+| Approve / Remove content | ❌ | ✅ | ✅ |
+| Import JSON | ❌ | ❌ | ✅ |
+| Reset local data | ❌ | ❌ | ✅ |
 
-## Content Policy
-- No harassment/hate.
-- No confidential Cisco info.
-- No personal data / doxxing.
-- No impersonation or unsafe content.
+## Enforcement Points
+- UI: disable/hide buttons based on permission
+- Runtime: requirePerm(permission) gates the action handler
+- Note: For production, enforce server-side too (do not rely on client RBAC)
 
-## Data Model
-### Export format
-{
-  "format": "cisco_social_export_v1",
-  "exported_at": "<ISO8601>",
-  "app_version": 2,
-  "data": {
-    "posts": [FeedItem...],
-    "groups": [Group...]
-  }
-}
+## Identity Assumptions (Demo)
+- Role is chosen in the UI and stored in localStorage (ROLE_KEY)
+- Replace with SSO/OIDC claims (groups/roles) in production
 
-### FeedItem
-- id: string (required)
-- type: "post" | "poll"
-- author: string
-- date: "YYYY-MM-DD"
-- bu: string[]
-- moderation:
-  - status: "active" | "flagged" | "removed"
-  - flags: [{ by, reason, at }]
-
-## Workflow
-- Report:
-  - sets moderation.status = "flagged"
-  - appends flags[] entry
-  - hides item from main feed (only "active" shows)
-- Approve:
-  - status -> "active"
-- Remove:
-  - status -> "removed" (still visible optionally in moderation panel)
-
-## Import Rules
-- Validate format === cisco_social_export_v1
-- Validate payload.data.posts/groups arrays
-- Mode: merge or replace
-  - merge: upsert by post.id; upsert groups by group.id or case-insensitive name
-  - replace: overwrite posts/groups completely
-
-## Security / Governance Notes (for production)
-- Replace local-only moderation with backend + RBAC:
-  - who can approve/remove, audit trails
-  - append-only moderation log (immutable)
-- Add server-side validation/sanitization
-- Rate-limit reporting
-- Retention policies for removed content and audit logs
-- Telemetry: count flags by category, time-to-moderate, repeat offenders
-
-## Test Plan
-- Export produces valid JSON and reloadable import
-- Import invalid format is rejected
-- Merge preserves existing + adds new
-- Replace fully overwrites
-- Reporting hides content from feed and shows in moderation queue
-- Approve restores to feed
-- Remove hides from feed and optionally visible in moderation view
-- Persistence across refresh via localStorage
 =========================================================
 -->
 </body>
 </html>
+
