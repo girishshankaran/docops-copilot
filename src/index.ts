@@ -86,6 +86,7 @@ const parseArgs = () => {
     user: get('--user', buildGatewayUser()),
     verbose: has('--verbose'),
     mock: has('--mock'),
+    llmOnly: has('--llm-only') || String(process.env.LLM_ONLY || '').toLowerCase() === 'true',
   };
 };
 
@@ -659,7 +660,7 @@ const main = async () => {
         const updatedDoc = full.doc;
         let contentPatch = buildPatchFromContent(target.docsPath, docContent, updatedDoc);
         if (!contentPatch) {
-          if (target.docsPath === 'docs/ui/home1.md') {
+          if (!args.llmOnly && target.docsPath === 'docs/ui/home1.md') {
             const deterministicDoc = buildDeterministicUiDocUpdate(docContent, combinedDiff);
             const deterministicPatch = buildPatchFromContent(target.docsPath, docContent, deterministicDoc);
             if (deterministicPatch) {
@@ -693,7 +694,7 @@ const main = async () => {
         }
         if (!checkPatchApplicable(target.docsPath, docContent, contentPatch).ok) {
           const replaceAllPatch = buildReplaceAllPatch(target.docsPath, docContent, updatedDoc);
-          if (checkPatchApplicable(target.docsPath, docContent, replaceAllPatch).ok) {
+          if (!args.llmOnly && checkPatchApplicable(target.docsPath, docContent, replaceAllPatch).ok) {
             contentPatch = replaceAllPatch;
             targetDebug.replaceAllPatchUsed = true;
           }
@@ -701,7 +702,7 @@ const main = async () => {
         targetDebug.contentPatchPreview = contentPatch.slice(0, 12000);
         patch = normalizePatch(target.docsPath, docContent, contentPatch);
       } catch (e) {
-        if (target.docsPath === 'docs/ui/home1.md') {
+        if (!args.llmOnly && target.docsPath === 'docs/ui/home1.md') {
           try {
             const deterministicDoc = buildDeterministicUiDocUpdate(docContent, combinedDiff);
             const deterministicPatch = buildPatchFromContent(target.docsPath, docContent, deterministicDoc);

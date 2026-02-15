@@ -160,6 +160,7 @@ jobs:
           BRIDGE_API_APP_KEY: ${{ secrets.BRIDGE_API_APP_KEY || secrets.OPENAI_USER_APPKEY }}
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL || vars.OPENAI_BASE_URL || 'https://chat-ai.cisco.com/openai/deployments/gpt-4o-mini' }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4o-mini' }}
+          LLM_ONLY: "true"
           OPENAI_USER: ${{ secrets.OPENAI_USER }}
           OPENAI_USER_APPKEY: ${{ secrets.OPENAI_USER_APPKEY }}
           # Personal access token with repo scope so we can read the docs repo
