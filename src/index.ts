@@ -360,13 +360,15 @@ const checkPatchApplicable = (docPath: string, docContent: string, patch: string
 };
 
 const normalizePatch = (docPath: string, docContent: string, patch: string): string => {
-  const trimmed = patch.trim();
-  const first = checkPatchApplicable(docPath, docContent, trimmed);
-  if (first.ok) return trimmed;
-  const fixed = fixBareHunkHeaders(trimmed);
-  if (fixed !== trimmed) {
-    const second = checkPatchApplicable(docPath, docContent, fixed);
-    if (second.ok) return fixed;
+  const normalized = patch.replace(/\r\n/g, '\n');
+  const candidate = normalized.endsWith('\n') ? normalized : `${normalized}\n`;
+  const first = checkPatchApplicable(docPath, docContent, candidate);
+  if (first.ok) return candidate;
+  const fixed = fixBareHunkHeaders(candidate);
+  if (fixed !== candidate) {
+    const fixedWithNl = fixed.endsWith('\n') ? fixed : `${fixed}\n`;
+    const second = checkPatchApplicable(docPath, docContent, fixedWithNl);
+    if (second.ok) return fixedWithNl;
     throw new Error(`Generated patch for ${docPath} is invalid/corrupt (${second.error || 'check failed'})`);
   }
   throw new Error(`Generated patch for ${docPath} is invalid/corrupt (${first.error || 'check failed'})`);
@@ -386,18 +388,18 @@ const buildPatchFromContent = (docPath: string, oldContent: string, newContent: 
     if (res.status !== 0 && res.status !== 1) {
       throw new Error(res.stderr?.trim() || `git diff failed with status ${res.status}`);
     }
-    const raw = (res.stdout || '').trim();
-    if (!raw) return undefined;
+    const raw = (res.stdout || '').replace(/\r\n/g, '\n');
+    if (!raw.trim()) return undefined;
     const lines = raw.split('\n');
     const hunkStart = lines.findIndex((l) => l.startsWith('@@ '));
     if (hunkStart < 0) return undefined;
-    const hunks = lines.slice(hunkStart).join('\n');
+    const hunks = lines.slice(hunkStart).join('\n').replace(/\n*$/, '\n');
     return [
       `diff --git a/${docPath} b/${docPath}`,
       `--- a/${docPath}`,
       `+++ b/${docPath}`,
       hunks,
-    ].join('\n');
+    ].join('\n').replace(/\n*$/, '\n');
   } finally {
     fs.rmSync(tmpRoot, { recursive: true, force: true });
   }
