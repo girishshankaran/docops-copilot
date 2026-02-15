@@ -364,7 +364,6 @@
 
     <div class="actions">
       <button id="postsBtn">Posts</button>
-      <button id="groupsBtn">Groups</button>
       <button id="photoUploadBtn">Upload Photo</button>
       <button id="quickPollBtn">Quick Poll</button>
       <button id="dataToolsBtn">Data Tools</button>
@@ -460,16 +459,6 @@
   </aside>
 </div>
 
-<!-- Groups Modal -->
-<div id="groupsModal" class="modal">
-  <div class="modal-content">
-    <div class="modal-head">
-      <h2 style="margin:0;">Groups</h2>
-      <button id="groupsModalClose" class="close-btn" aria-label="Close groups">&times;</button>
-    </div>
-    <div id="groupsContainer"></div>
-  </div>
-</div>
 
 <!-- Data Tools Modal -->
 <div id="dataModal" class="modal">
@@ -716,10 +705,6 @@ function updateThemeToggleLabel(){
 /* -----------------------
    Data model
 ----------------------- */
-let groups = [
-  { id: uid('grp'), name: "AI Engineers", members: ["Raj S.","David K."], webex: "https://webex.com/meet/ai-engineers" },
-  { id: uid('grp'), name: "UX Designers", members: ["Alice R."], webex: "https://webex.com/meet/ux-designers" }
-];
 
 let posts = [
   {
@@ -761,7 +746,8 @@ function ensureModerationFields(item){
   return item;
 }
 function saveState(){
-  const state = { version: 4, posts, groups };
+  const state = { version: 4, posts };
+
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 function loadState(){
@@ -770,7 +756,7 @@ function loadState(){
   const state = safeJsonParse(raw, null);
   if (!state) return;
   if (Array.isArray(state.posts)) posts = state.posts.map(ensureModerationFields);
-  if (Array.isArray(state.groups)) groups = state.groups;
+  
 }
 
 /* -----------------------
@@ -793,9 +779,6 @@ const postCreation   = document.getElementById('postCreation');
 const pollCreation   = document.getElementById('pollCreation');
 const photoCreation  = document.getElementById('photoCreation');
 
-const groupsModal     = document.getElementById('groupsModal');
-const groupsContainer = document.getElementById('groupsContainer');
-
 const dataModal        = document.getElementById('dataModal');
 const moderationModal  = document.getElementById('moderationModal');
 const moderationTableBody = document.getElementById('moderationTableBody');
@@ -812,11 +795,11 @@ function hideForms(){
 }
 
 function hideOverlays(){
-  groupsModal.classList.remove('show');
   dataModal.classList.remove('show');
   moderationModal.classList.remove('show');
   reportsModal.classList.remove('show');
 }
+
 
 /* -----------------------
    Toolbar handlers
@@ -825,7 +808,6 @@ document.getElementById('postsBtn').onclick = () => { hideOverlays(); hideForms(
 document.getElementById('quickPollBtn').onclick = () => { hideOverlays(); hideForms(); pollCreation.style.display='block'; };
 document.getElementById('photoUploadBtn').onclick = () => { hideOverlays(); hideForms(); photoCreation.style.display='block'; };
 
-document.getElementById('groupsBtn').onclick = () => { hideOverlays(); hideForms(); openGroups(); };
 document.getElementById('dataToolsBtn').onclick = () => { hideOverlays(); hideForms(); openDataTools(); };
 
 document.getElementById('moderationBtn').onclick = () => {
@@ -844,24 +826,6 @@ document.getElementById('roleSelect').addEventListener('change', (e) => setRole(
 /* -----------------------
    Groups
 ----------------------- */
-function openGroups(){
-  groupsContainer.innerHTML = '';
-  groups.forEach(g => {
-    const div = document.createElement('div');
-    div.style.marginBottom = '12px';
-    div.innerHTML = `
-      <div class="row" style="justify-content:space-between;">
-        <div>
-          <div style="font-weight:900; color:var(--brand-strong);">${sanitize(g.name)}</div>
-          <div class="muted small">${sanitize((g.members||[]).join(', '))}</div>
-        </div>
-        <button onclick="window.open('${sanitize(g.webex)}','_blank')">Meet</button>
-      </div>`;
-    groupsContainer.appendChild(div);
-  });
-  groupsModal.classList.add('show');
-}
-document.getElementById('groupsModalClose').onclick = () => groupsModal.classList.remove('show');
 
 /* -----------------------
    Data tools (export/import) with RBAC
@@ -880,7 +844,8 @@ document.getElementById('exportBtn').onclick = () => {
     format: EXPORT_FORMAT,
     exported_at: nowIso(),
     app_version: 4,
-    data: { posts: posts.map(ensureModerationFields), groups }
+    data: { posts: posts.map(ensureModerationFields) }
+
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
   triggerDownload(blob, `cisco_social_export_${formatDate()}_v1.json`);
@@ -1534,7 +1499,7 @@ document.getElementById('photoSubmit').onclick = () => {
    Modal close: outside click + ESC
 ----------------------- */
 window.addEventListener('click', (e) => {
-  if (e.target === groupsModal) groupsModal.classList.remove('show');
+  
   if (e.target === dataModal) dataModal.classList.remove('show');
   if (e.target === moderationModal) moderationModal.classList.remove('show');
   if (e.target === reportsModal) reportsModal.classList.remove('show');
