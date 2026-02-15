@@ -1037,5 +1037,533 @@ function renderModerationTable(){
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${moderationBadge(item.moderation.status)}</td>
-      <
+      <td>
+        <div style="font-weight:900; color:var(--brand-strong);">${sanitize(title)}</div>
+        <div class="muted small">${sanitize(item.author || 'Unknown')} • ${sanitize(item.date || '')} • <span class="mono">${sanitize(item.id)}</span></div>
+        <div class="small" style="margin-top:6px;">${sanitize(snippet)}</div>
+      </td>
+      <td>${reportedInfo}</td>
+      <td>
+        <div class="row" style="justify-content:flex-end;">
+          <button class="btn-secondary" onclick="previewItem('${sanitize(item.id)}')">Preview</button>
+          <button ${approveDisabledAttr} onclick="approveItem('${sanitize(item.id)}')">Approve</button>
+          <button class="btn-danger" ${removeDisabledAttr} onclick="removeItem('${sanitize(item.id)}')">Remove</button>
+        </div>
+        ${actionsDisabled ? `<div class="muted small" style="margin-top:6px;">Moderator/Admin only</div>` : ''}
+      </td>
+    `;
+    moderationTableBody.appendChild(tr);
+  }
+}
+
+function previewItem(itemId){
+  const item = posts.find(p => p.id === itemId);
+  if (!item) return;
+  const title = item.type === 'poll' ? item.question : item.title;
+  const body  = item.type === 'poll'
+    ? `Poll options:\n- ${(item.options||[]).join('\n- ')}`
+    : item.content;
+  alert(`Preview\n\n${title}\n\n${body}`);
+}
+
+/* -----------------------
+   Reports (frontend-only)
+----------------------- */
+document.getElementById('reportsCloseBtn').onclick = () => reportsModal.classList.remove('show');
+document.getElementById('reportsCancelBtn').onclick = () => reportsModal.classList.remove('show');
+
+document.getElementById('reportsOkBtn').onclick = () => {
+  const dept = document.getElementById('reportDeptSelect').value;
+  const fmt  = document.getElementById('reportFormatSelect').value;
+
+  const report = buildFrontendReport(dept);
+
+  if (fmt === 'xls') downloadXls(report);
+  else downloadPdf(report);
+
+  showToast(`Generated ${dept} report (${fmt.toUpperCase()}).`);
+  reportsModal.classList.remove('show');
+};
+
+function matchesDept(item, dept) {
+  if (!dept || dept === 'All') return true;
+  const bu = Array.isArray(item?.bu) ? item.bu : ['All'];
+  return bu.includes('All') || bu.includes(dept);
+}
+
+function buildFrontendReport(dept) {
+  const allItems = (posts || []).map(ensureModerationFields);
+
+  const deptItems = allItems.filter(it => matchesDept(it, dept));
+  const activeItems  = deptItems.filter(it => it.moderation?.status === 'active');
+  const flaggedItems = deptItems.filter(it => it.moderation?.status === 'flagged');
+  const removedItems = deptItems.filter(it => it.moderation?.status === 'removed');
+
+  const postsOnly = deptItems.filter(it => it.type === 'post');
+  const pollsOnly = deptItems.filter(it => it.type === 'poll');
+
+  const recentActive = [...activeItems]
+    .sort((a,b) => String(b.date||'').localeCompare(String(a.date||'')))
+    .slice(0, 25)
+    .map(it => ({
+      type: it.type || 'item',
+      title: it.type === 'poll' ? (it.question || '(poll)') : (it.title || '(post)'),
+      author: it.author || 'Unknown',
+      date: it.date || '',
+      status: it.moderation?.status || 'active'
+    }));
+
+  return {
+    title: 'Cisco Social Department Report',
+    department: dept,
+    generated_at: new Date().toISOString(),
+    summary: {
+      total_items: deptItems.length,
+      active: activeItems.length,
+      flagged: flaggedItems.length,
+      removed: removedItems.length,
+      posts: postsOnly.length,
+      polls: pollsOnly.length
+    },
+    rows: recentActive
+  };
+}
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, m => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[m]));
+}
+
+function downloadXls(report) {
+  const stamp = report.generated_at.slice(0, 10);
+  const file = `cisco_social_report_${report.department}_${stamp}.xls`;
+
+  const rows = [];
+  rows.push(['Cisco Social Report', '', '', '', '']);
+  rows.push(['Department', report.department, '', '', '']);
+  rows.push(['Generated At', report.generated_at, '', '', '']);
+  rows.push(['', '', '', '', '']);
+  rows.push(['Summary', '', '', '', '']);
+  rows.push(['Total Items', report.summary.total_items, '', '', '']);
+  rows.push(['Active', report.summary.active, '', '', '']);
+  rows.push(['Flagged', report.summary.flagged, '', '', '']);
+  rows.push(['Removed', report.summary.removed, '', '', '']);
+  rows.push(['Posts', report.summary.posts, '', '', '']);
+  rows.push(['Polls', report.summary.polls, '', '', '']);
+  rows.push(['', '', '', '', '']);
+  rows.push(['Recent Active (Top 25)', '', '', '', '']);
+  rows.push(['Type', 'Title/Question', 'Author', 'Date', 'Status']);
+
+  for (const r of report.rows) {
+    rows.push([r.type, r.title, r.author, r.date, r.status]);
+  }
+
+  const table = `
+    <html><head><meta charset="utf-8"></head>
+    <body>
+      <table border="1" cellpadding="6" cellspacing="0">
+        ${rows.map(cols => `<tr>${cols.map(c => `<td>${escapeHtml(String(c ?? ''))}</td>`).join('')}</tr>`).join('')}
+      </table>
+    </body></html>
+  `;
+
+  const blob = new Blob([table], { type: 'application/vnd.ms-excel' });
+  triggerDownload(blob, file);
+}
+
+function downloadPdf(report) {
+  const stamp = report.generated_at.slice(0, 10);
+  const file = `cisco_social_report_${report.department}_${stamp}.pdf`;
+
+  const lines = [
+    report.title,
+    `Department: ${report.department}`,
+    `Generated: ${report.generated_at}`,
+    ``,
+    `Summary`,
+    `  Total Items: ${report.summary.total_items}`,
+    `  Active: ${report.summary.active}`,
+    `  Flagged: ${report.summary.flagged}`,
+    `  Removed: ${report.summary.removed}`,
+    `  Posts: ${report.summary.posts}`,
+    `  Polls: ${report.summary.polls}`,
+    ``,
+    `Recent Active (Top ${report.rows.length})`
+  ];
+
+  report.rows.forEach((r, i) => {
+    const t = truncate(r.title, 70);
+    lines.push(`  ${i+1}. [${r.type}] ${t} — ${r.author} (${r.date})`);
+  });
+
+  const bytes = buildSimplePdf(lines);
+  const blob = new Blob([bytes], { type:'application/pdf' });
+  triggerDownload(blob, file);
+}
+
+function truncate(s, n) {
+  s = String(s ?? '');
+  return s.length > n ? s.slice(0, n-1) + '…' : s;
+}
+
+/* Minimal one-page PDF writer */
+function buildSimplePdf(lines) {
+  const esc = (s) => String(s).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+
+  const pageW = 595, pageH = 842;
+  const left = 50;
+  let y = 790;
+  const lh = 14;
+
+  let content = 'BT\n/F1 12 Tf\n';
+  content += `${left} ${y} Td\n`;
+  lines.forEach((ln, i) => {
+    if (i !== 0) content += `0 -${lh} Td\n`;
+    content += `(${esc(ln)}) Tj\n`;
+  });
+  content += 'ET\n';
+
+  const enc = new TextEncoder();
+  const contentBytes = enc.encode(content);
+
+  const objects = [];
+  objects.push(`1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`);
+  objects.push(`2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n`);
+  objects.push(`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>\nendobj\n`);
+  objects.push(`4 0 obj\n<< /Length ${contentBytes.length} >>\nstream\n${content}endstream\nendobj\n`);
+  objects.push(`5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n`);
+
+  let pdf = `%PDF-1.4\n`;
+  const offsets = [0];
+  for (const obj of objects) { offsets.push(pdf.length); pdf += obj; }
+
+  const xrefStart = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n`;
+  pdf += `0000000000 65535 f \n`;
+  for (let i = 1; i <= objects.length; i++) {
+    pdf += `${String(offsets[i]).padStart(10,'0')} 00000 n \n`;
+  }
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+
+  return enc.encode(pdf);
+}
+
+function triggerDownload(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* -----------------------
+   Feed rendering
+----------------------- */
+function postMatchesQuery(post){
+  if (!activeQuery) return true;
+  const q = activeQuery.toLowerCase();
+  if (post.type === 'post') {
+    return [post.author, post.title, post.content, (post.tags||[]).join(' '), (post.bu||[]).join(' ')]
+      .join(' ').toLowerCase().includes(q);
+  }
+  return [post.author, post.question, (post.options||[]).join(' '), (post.bu||[]).join(' ')]
+    .join(' ').toLowerCase().includes(q);
+}
+
+function renderPosts(){
+  postsContainer.innerHTML = '';
+  posts = posts.map(ensureModerationFields);
+
+  const visible = posts
+    .filter(p => p.moderation.status === 'active')
+    .filter(postMatchesQuery);
+
+  feedStatus.textContent = activeQuery ? `Filtered by "${activeQuery}"` : 'Showing active feed items';
+  feedCount.textContent = `${visible.length} item${visible.length === 1 ? '' : 's'}`;
+
+  if (visible.length === 0) {
+    postsContainer.innerHTML = '<p class="empty-state">No active feed items match your search.</p>';
+    return;
+  }
+
+  visible.forEach((post, idx) => {
+    if (post.type === 'post') {
+      const div = document.createElement('div');
+      div.className = 'post';
+      div.innerHTML = `
+        <div class="row" style="justify-content:space-between;">
+          <div>
+            <strong>${sanitize(post.author)}</strong> <time>${sanitize(post.date)}</time>
+          </div>
+          <div class="row">
+            <button class="btn-warn" title="Report this content" onclick="reportItem('${sanitize(post.id)}')">🚩 Report</button>
+          </div>
+        </div>
+        <h3>${sanitize(post.title)}</h3>
+        <p>${sanitize(post.content)}</p>
+        ${post.image ? `<img class="post-image" src="${sanitize(post.image)}" alt="${sanitize(post.title || 'Uploaded photo')}" />` : ''}
+        <div class="post-tags">${(post.tags || []).map(t => `<span>${sanitize(t)}</span>`).join('')}</div>
+        <div class="muted small"><em>Visible to: ${sanitize((post.bu || ['All']).join(', '))}</em></div>
+        <div class="row" style="margin-top:8px;">
+          <button>👍 Like</button><button>💬 Comment</button><button>🔄 Share</button>
+        </div>
+      `;
+      postsContainer.appendChild(div);
+    } else if (post.type === 'poll') {
+      postsContainer.appendChild(renderPoll(post, idx));
+    }
+  });
+}
+
+function renderPoll(post, idx){
+  const div = document.createElement('div');
+  div.className = 'poll';
+  div.innerHTML = `
+    <div class="row" style="justify-content:space-between;">
+      <div><strong>${sanitize(post.author)}</strong> <time>${sanitize(post.date)}</time></div>
+      <button class="btn-warn" title="Report this poll" onclick="reportItem('${sanitize(post.id)}')">🚩 Report</button>
+    </div>
+    <div class="poll-block">
+      <div class="poll-question">${sanitize(post.question)}</div>
+      <div class="muted small"><em>Visible to: ${sanitize((post.bu || ['All']).join(', '))}</em></div>
+      <div id="pollArea${idx}"></div>
+    </div>
+  `;
+  const pollArea = div.querySelector(`#pollArea${idx}`);
+
+  if (!(post.voters && post.voters['demo-user'])) {
+    const form = document.createElement('form');
+    form.innerHTML = (post.options || []).map((opt, oidx) => `
+      <label style="display:block;margin:4px 0">
+        <input type="radio" name="opt${idx}" value="${oidx}"/> ${sanitize(opt)}
+      </label>`).join('') + `<button type="submit">Vote</button>`;
+    form.onsubmit = e => {
+      e.preventDefault();
+      const sel = form.querySelector('input[name=opt' + idx + ']:checked');
+      if (!sel) return;
+
+      if (!post.voters) post.voters = {};
+      post.voters['demo-user'] = sel.value;
+      post.votes[sel.value] = (post.votes[sel.value] || 0) + 1;
+
+      saveState();
+      renderPosts();
+    };
+    pollArea.appendChild(form);
+  } else {
+    const totalVotes = (post.votes || []).reduce((a,b) => a + b, 0) || 1;
+    let html = '';
+    (post.options || []).forEach((opt, i) => {
+      const pct = Math.round((post.votes[i] || 0) * 100 / totalVotes);
+      html += `<span>${sanitize(opt)}: ${pct}% (${post.votes[i] || 0})</span> `;
+    });
+    pollArea.innerHTML = `<div class="poll-results">${html}</div><div class="muted small">Thanks for voting!</div>`;
+  }
+
+  return div;
+}
+
+/* -----------------------
+   Create post/poll/photo
+----------------------- */
+function getSelectedValues(selectId){
+  const options = Array.from(document.getElementById(selectId).selectedOptions).map(o => o.value);
+  return options.length ? options : ['All'];
+}
+
+document.getElementById('postCancel').onclick = () => { postCreation.style.display='none'; clearPostForm(); };
+document.getElementById('pollCancel').onclick = () => { pollCreation.style.display='none'; clearPollForm(); };
+document.getElementById('photoCancel').onclick = () => { photoCreation.style.display='none'; clearPhotoForm(); };
+
+function clearPostForm(){
+  document.getElementById('postTitle').value='';
+  document.getElementById('postContent').value='';
+  document.getElementById('postTags').value='';
+  document.getElementById('postBU').selectedIndex=0;
+}
+function clearPollForm(){
+  document.getElementById('pollQuestion').value='';
+  document.getElementById('pollOptions').value='';
+  document.getElementById('pollBU').selectedIndex=0;
+}
+function clearPhotoForm(){
+  document.getElementById('photoTitle').value='';
+  document.getElementById('photoCaption').value='';
+  document.getElementById('photoFile').value='';
+  document.getElementById('photoBU').selectedIndex=0;
+  document.getElementById('photoPreviewWrap').textContent='No photo selected. Drag and drop an image here.';
+}
+
+document.getElementById('postSubmit').onclick = () => {
+  const title = document.getElementById('postTitle').value.trim();
+  const content = document.getElementById('postContent').value.trim();
+  const rawTags = document.getElementById('postTags').value.trim();
+  if (!title || !content) { showToast('Post title and content are required.'); return; }
+
+  const tags = rawTags
+    ? rawTags.split(',').map(t => t.trim()).filter(Boolean).map(t => t.startsWith('#') ? t : `#${t}`)
+    : ['#Update'];
+
+  posts.unshift(ensureModerationFields({
+    id: uid('post'),
+    type:'post',
+    author:'You',
+    date: formatDate(),
+    title, content, tags,
+    bu: getSelectedValues('postBU'),
+    moderation: { status:'active', flags:[] }
+  }));
+
+  saveState();
+  clearPostForm();
+  postCreation.style.display='none';
+  renderPosts();
+  showToast('Post published.');
+};
+
+document.getElementById('pollSubmit').onclick = () => {
+  const question = document.getElementById('pollQuestion').value.trim();
+  const options = document.getElementById('pollOptions').value.split('\n').map(o => o.trim()).filter(Boolean);
+
+  if (!question || options.length < 2) { showToast('Add a poll question and at least 2 options.'); return; }
+
+  posts.unshift(ensureModerationFields({
+    id: uid('poll'),
+    type:'poll',
+    author:'You',
+    date: formatDate(),
+    question,
+    options,
+    votes: new Array(options.length).fill(0),
+    voters: {},
+    bu: getSelectedValues('pollBU'),
+    moderation: { status:'active', flags:[] }
+  }));
+
+  saveState();
+  clearPollForm();
+  pollCreation.style.display='none';
+  renderPosts();
+  showToast('Poll posted.');
+};
+
+document.getElementById('globalSearch').addEventListener('input', (e) => {
+  activeQuery = e.target.value.trim();
+  renderPosts();
+});
+
+/* Photo upload */
+document.getElementById('photoFile').addEventListener('change', (e) => {
+  const [file] = e.target.files || [];
+  setPhotoFile(file);
+});
+const photoPreviewWrap = document.getElementById('photoPreviewWrap');
+
+function setPhotoFile(file){
+  const photoInput = document.getElementById('photoFile');
+  if (!file){
+    photoPreviewWrap.textContent='No photo selected. Drag and drop an image here.';
+    return false;
+  }
+  if (!file.type.startsWith('image/')){
+    showToast('Please select an image file.');
+    photoInput.value='';
+    photoPreviewWrap.textContent='No photo selected. Drag and drop an image here.';
+    return false;
+  }
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  photoInput.files = dt.files;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    photoPreviewWrap.innerHTML = `<img class="post-image" src="${sanitize(reader.result)}" alt="Photo preview" style="max-width:100%; margin:0;" />`;
+  };
+  reader.readAsDataURL(file);
+  return true;
+}
+
+['dragenter','dragover'].forEach(evt => photoPreviewWrap.addEventListener(evt, (e) => {
+  e.preventDefault(); e.stopPropagation();
+  photoPreviewWrap.style.borderColor = 'var(--brand)';
+}));
+['dragleave','drop'].forEach(evt => photoPreviewWrap.addEventListener(evt, (e) => {
+  e.preventDefault(); e.stopPropagation();
+  photoPreviewWrap.style.borderColor = 'var(--border)';
+}));
+photoPreviewWrap.addEventListener('drop', (e) => {
+  const [file] = e.dataTransfer.files || [];
+  setPhotoFile(file);
+});
+
+document.getElementById('photoSubmit').onclick = () => {
+  const title = document.getElementById('photoTitle').value.trim();
+  const caption = document.getElementById('photoCaption').value.trim();
+  const file = document.getElementById('photoFile').files[0];
+  if (!title || !file) { showToast('Photo title and image are required.'); return; }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    posts.unshift(ensureModerationFields({
+      id: uid('post'),
+      type:'post',
+      author:'You',
+      date: formatDate(),
+      title,
+      content: caption || 'Shared a new photo.',
+      image: reader.result,
+      tags: ['#Photo'],
+      bu: getSelectedValues('photoBU'),
+      moderation: { status:'active', flags:[] }
+    }));
+
+    saveState();
+    clearPhotoForm();
+    photoCreation.style.display='none';
+    renderPosts();
+    showToast('Photo uploaded to feed.');
+  };
+  reader.readAsDataURL(file);
+};
+
+/* -----------------------
+   Modal close: outside click + ESC
+----------------------- */
+window.addEventListener('click', (e) => {
+  if (e.target === groupsModal) groupsModal.classList.remove('show');
+  if (e.target === dataModal) dataModal.classList.remove('show');
+  if (e.target === moderationModal) moderationModal.classList.remove('show');
+  if (e.target === reportsModal) reportsModal.classList.remove('show');
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') hideOverlays();
+});
+
+/* -----------------------
+   Boot
+----------------------- */
+loadTheme();
+loadState();
+posts = posts.map(ensureModerationFields);
+loadPolicyBanner();
+
+loadRole();
+applyRbacToUi();
+
+saveState();
+renderPosts();
+
+// expose for inline onclick handlers
+window.reportItem = reportItem;
+window.approveItem = approveItem;
+window.removeItem = removeItem;
+window.previewItem = previewItem;
+</script>
+
+</body>
+</html>
 
