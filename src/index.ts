@@ -424,6 +424,7 @@ const buildReplaceAllPatch = (docPath: string, oldContent: string, newContent: s
 };
 
 const buildDeterministicUiDocUpdate = (docContent: string, combinedDiff: string): string => {
+  const diffLower = combinedDiff.toLowerCase();
   const added = combinedDiff
     .split(/\r?\n/)
     .filter((l) => l.startsWith('+') && !l.startsWith('+++'))
@@ -450,6 +451,22 @@ const buildDeterministicUiDocUpdate = (docContent: string, combinedDiff: string)
     lines.push('');
     lines.push('### Removed UI lines');
     for (const r of removed) lines.push(`- \`${r}\``);
+  }
+  // Add actionable procedures for common UI capabilities detected in the diff.
+  if (diffLower.includes('report')) {
+    lines.push('');
+    lines.push('### Procedure: Generate Reports');
+    lines.push('1. Open the Cisco Social home page and click **Reports** in the toolbar.');
+    lines.push('2. In the Reports modal, choose the report type and department filters.');
+    lines.push('3. Set the date range and include/exclude inactive users as needed.');
+    lines.push('4. Click **Generate Report** and wait for the summary table to load.');
+    lines.push('5. Use **Export CSV** (or Download) to save the generated report.');
+  }
+  if (diffLower.includes('insights')) {
+    lines.push('');
+    lines.push('### Procedure: View Insights');
+    lines.push('1. From the toolbar, click **Insights**.');
+    lines.push('2. Review active post count and group summary in the insight toast/panel.');
   }
   const block = lines.join('\n');
   if (docContent.includes('## Automated UI Sync Notes')) {
