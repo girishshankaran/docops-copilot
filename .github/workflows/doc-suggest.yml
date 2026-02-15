@@ -186,6 +186,12 @@ jobs:
           else
             echo "No suggestions directory was created."
           fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: doc-suggestions
+          path: suggestions
+          if-no-files-found: warn
       - name: Enforce non-empty patch generation for mapped targets
         run: |
           set -euo pipefail
@@ -203,11 +209,6 @@ jobs:
             exit 1
           fi
           echo "Patch generation guardrail passed (targetCount=$target_count, generatedPatchCount=$generated_count)."
-      - uses: actions/upload-artifact@v4
-        with:
-          name: doc-suggestions
-          path: suggestions
-          if-no-files-found: warn
       - name: Auto-apply patches to docs repo
         if: ${{ env.DOCS_PAT != '' }}
         env:
