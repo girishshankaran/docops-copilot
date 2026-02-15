@@ -314,6 +314,55 @@
     .badge-removed{color:var(--danger); border-color:rgba(179,38,30,.35)}
     .badge-active{color:var(--success); border-color:rgba(13,143,95,.35)}
 
+    .report-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+      gap:10px;
+      margin-top:10px;
+    }
+    .report-preview{
+      margin-top:12px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px;
+      background:rgba(15,94,168,.04);
+    }
+    html[data-theme="dark"] .report-preview{background:rgba(0,188,235,.08)}
+    .report-preview h3{margin:0 0 8px; color:var(--brand-strong)}
+    .report-kpis{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+      gap:8px;
+      margin:8px 0 10px;
+    }
+    .report-kpi{
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:8px;
+      background:var(--surface);
+    }
+    .report-kpi strong{display:block; font-size:1.2rem; color:var(--brand-strong)}
+    .report-history{
+      margin-top:12px;
+      border-top:1px solid var(--divider);
+      padding-top:10px;
+    }
+    .report-history ul{
+      list-style:none;
+      margin:8px 0 0;
+      padding:0;
+      max-height:130px;
+      overflow:auto;
+    }
+    .report-history li{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      padding:6px 2px;
+      border-bottom:1px solid var(--divider);
+      font-size:.9rem;
+    }
+
     @media (max-width:1000px){
       .container{flex-direction:column; padding:1rem}
       .main-feed{max-height:none}
@@ -552,34 +601,77 @@
   <div class="modal-content">
     <div class="modal-head">
       <div>
-        <h2 style="margin:0;">Reports</h2>
-        <div class="muted small">Select a department and format to generate a report (frontend-only).</div>
+        <h2 style="margin:0;">Reports Workspace</h2>
+        <div class="muted small">Build department reports with filters, preview results, and download in PDF/XLS.</div>
       </div>
       <button id="reportsCloseBtn" class="close-btn" aria-label="Close reports">&times;</button>
     </div>
 
-    <label class="muted small" for="reportDeptSelect">Department</label>
-    <select id="reportDeptSelect" class="content-input">
-      <option value="HR">HR</option>
-      <option value="Engineering">Engineering</option>
-      <option value="Marketing">Marketing</option>
-      <option value="Sales">Sales</option>
-      <option value="All">All</option>
-    </select>
+    <div class="report-grid">
+      <div>
+        <label class="muted small" for="reportDeptSelect">Department</label>
+        <select id="reportDeptSelect" class="content-input">
+          <option value="All">All</option>
+          <option value="HR">HR</option>
+          <option value="Engineering">Engineering</option>
+          <option value="Marketing">Marketing</option>
+          <option value="Sales">Sales</option>
+        </select>
+      </div>
+      <div>
+        <label class="muted small" for="reportTypeSelect">Report type</label>
+        <select id="reportTypeSelect" class="content-input">
+          <option value="engagement">Engagement Summary</option>
+          <option value="moderation">Moderation Snapshot</option>
+          <option value="activity">Recent Activity Digest</option>
+        </select>
+      </div>
+      <div>
+        <label class="muted small" for="reportRangeSelect">Date range</label>
+        <select id="reportRangeSelect" class="content-input">
+          <option value="7">Last 7 days</option>
+          <option value="30" selected>Last 30 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="all">All time</option>
+        </select>
+      </div>
+      <div>
+        <label class="muted small" for="reportFormatSelect">Report format</label>
+        <select id="reportFormatSelect" class="content-input">
+          <option value="pdf">PDF</option>
+          <option value="xls">XLS</option>
+        </select>
+      </div>
+    </div>
 
-    <label class="muted small" for="reportFormatSelect" style="display:block; margin-top:10px;">Report format</label>
-    <select id="reportFormatSelect" class="content-input">
-      <option value="pdf">PDF</option>
-      <option value="xls">XLS</option>
-    </select>
+    <label class="row small" style="gap:8px; margin-top:4px;">
+      <input id="reportIncludeModeration" type="checkbox" checked />
+      Include moderation details (flagged/removed content stats)
+    </label>
 
     <div class="row" style="justify-content:flex-end; margin-top:12px;">
+      <button id="reportsPreviewBtn" class="btn-secondary">Preview</button>
+      <button id="reportsDownloadBtn">Download</button>
       <button id="reportsCancelBtn" class="btn-secondary">Cancel</button>
-      <button id="reportsOkBtn">OK</button>
+    </div>
+
+    <div id="reportPreview" class="report-preview">
+      <h3>Preview</h3>
+      <div class="muted small">Select filters and click Preview to view generated report data.</div>
+    </div>
+
+    <div class="report-history">
+      <div class="row" style="justify-content:space-between;">
+        <strong>Download History</strong>
+        <button id="reportsClearHistoryBtn" class="btn-secondary">Clear</button>
+      </div>
+      <ul id="reportHistoryList">
+        <li><span class="muted">No reports downloaded in this browser yet.</span></li>
+      </ul>
     </div>
 
     <div class="muted small" style="margin-top:10px;">
-      Generates a local downloadable file from the current in-browser data. No backend required.
+      Generated from in-browser data only. No backend calls are made.
     </div>
   </div>
 </div>
@@ -590,13 +682,14 @@
  * - Feed + posts/polls/photos
  * - Option C: Export/Import JSON + Moderation workflow (report -> approve/remove)
  * - RBAC: employee/moderator/admin
- * - Reports: department + format (PDF/XLS) -> downloads locally generated file
+ * - Reports Workspace: filtered report generation, preview, and local download history
  */
 
 const STORAGE_KEY = 'cisco_social_state_v4';
 const THEME_KEY   = 'cisco_social_theme_v1';
 const POLICY_KEY  = 'cisco_social_policy_dismissed_v1';
 const ROLE_KEY    = 'cisco_social_role_v1';
+const REPORT_HISTORY_KEY = 'cisco_social_report_history_v1';
 const EXPORT_FORMAT = 'cisco_social_export_v1';
 
 function safeJsonParse(text, fallback) { try { return JSON.parse(text); } catch { return fallback; } }
@@ -733,6 +826,8 @@ let posts = [
 ];
 
 let activeQuery = '';
+let reportDraft = null;
+let reportHistory = [];
 
 /* -----------------------
    Persistence
@@ -757,6 +852,15 @@ function loadState(){
   if (!state) return;
   if (Array.isArray(state.posts)) posts = state.posts.map(ensureModerationFields);
   
+}
+function loadReportHistory(){
+  const raw = localStorage.getItem(REPORT_HISTORY_KEY);
+  if (!raw) return;
+  const parsed = safeJsonParse(raw, []);
+  if (Array.isArray(parsed)) reportHistory = parsed.slice(0, 12);
+}
+function saveReportHistory(){
+  localStorage.setItem(REPORT_HISTORY_KEY, JSON.stringify(reportHistory.slice(0, 12)));
 }
 
 /* -----------------------
@@ -817,6 +921,9 @@ document.getElementById('moderationBtn').onclick = () => {
 
 document.getElementById('reportsBtn').onclick = () => {
   hideOverlays(); hideForms();
+  reportDraft = null;
+  renderReportPreview(null);
+  renderReportHistory();
   reportsModal.classList.add('show');
 };
 
@@ -1037,18 +1144,48 @@ function previewItem(itemId){
 document.getElementById('reportsCloseBtn').onclick = () => reportsModal.classList.remove('show');
 document.getElementById('reportsCancelBtn').onclick = () => reportsModal.classList.remove('show');
 
-document.getElementById('reportsOkBtn').onclick = () => {
-  const dept = document.getElementById('reportDeptSelect').value;
-  const fmt  = document.getElementById('reportFormatSelect').value;
+document.getElementById('reportsPreviewBtn').onclick = () => {
+  reportDraft = buildFrontendReport(getReportFilters());
+  renderReportPreview(reportDraft);
+  showToast('Report preview generated.');
+};
 
-  const report = buildFrontendReport(dept);
+document.getElementById('reportsDownloadBtn').onclick = () => {
+  const filters = getReportFilters();
+  const fmt = filters.format;
+  const report = reportDraft || buildFrontendReport(filters);
 
   if (fmt === 'xls') downloadXls(report);
   else downloadPdf(report);
 
-  showToast(`Generated ${dept} report (${fmt.toUpperCase()}).`);
+  addReportHistoryEntry({
+    generatedAt: report.generated_at,
+    department: report.department,
+    type: report.type,
+    format: fmt.toUpperCase(),
+    rows: report.rows.length
+  });
+  showToast(`Downloaded ${report.department} ${report.type} (${fmt.toUpperCase()}).`);
   reportsModal.classList.remove('show');
 };
+
+document.getElementById('reportsClearHistoryBtn').onclick = () => {
+  if (!confirm('Clear downloaded report history for this browser?')) return;
+  reportHistory = [];
+  saveReportHistory();
+  renderReportHistory();
+  showToast('Report history cleared.');
+};
+
+function getReportFilters(){
+  return {
+    department: document.getElementById('reportDeptSelect').value,
+    type: document.getElementById('reportTypeSelect').value,
+    dateRange: document.getElementById('reportRangeSelect').value,
+    includeModeration: document.getElementById('reportIncludeModeration').checked,
+    format: document.getElementById('reportFormatSelect').value
+  };
+}
 
 function matchesDept(item, dept) {
   if (!dept || dept === 'All') return true;
@@ -1056,10 +1193,13 @@ function matchesDept(item, dept) {
   return bu.includes('All') || bu.includes(dept);
 }
 
-function buildFrontendReport(dept) {
+function buildFrontendReport(filters) {
   const allItems = (posts || []).map(ensureModerationFields);
+  const dept = filters.department;
 
-  const deptItems = allItems.filter(it => matchesDept(it, dept));
+  const deptItems = allItems
+    .filter(it => matchesDept(it, dept))
+    .filter(it => inDateRange(it.date, filters.dateRange));
   const activeItems  = deptItems.filter(it => it.moderation?.status === 'active');
   const flaggedItems = deptItems.filter(it => it.moderation?.status === 'flagged');
   const removedItems = deptItems.filter(it => it.moderation?.status === 'removed');
@@ -1078,10 +1218,15 @@ function buildFrontendReport(dept) {
       status: it.moderation?.status || 'active'
     }));
 
-  return {
+  const report = {
     title: 'Cisco Social Department Report',
     department: dept,
+    type: filters.type,
     generated_at: new Date().toISOString(),
+    filters: {
+      date_range: filters.dateRange,
+      include_moderation: filters.includeModeration
+    },
     summary: {
       total_items: deptItems.length,
       active: activeItems.length,
@@ -1092,6 +1237,91 @@ function buildFrontendReport(dept) {
     },
     rows: recentActive
   };
+
+  if (filters.type === 'moderation') {
+    report.rows = [...flaggedItems, ...removedItems]
+      .slice(0, 25)
+      .map(it => ({
+        type: it.type || 'item',
+        title: it.type === 'poll' ? (it.question || '(poll)') : (it.title || '(post)'),
+        author: it.author || 'Unknown',
+        date: it.date || '',
+        status: it.moderation?.status || 'active'
+      }));
+  } else if (filters.type === 'activity') {
+    report.rows = [...deptItems]
+      .sort((a,b) => String(b.date||'').localeCompare(String(a.date||'')))
+      .slice(0, 25)
+      .map(it => ({
+        type: it.type || 'item',
+        title: it.type === 'poll' ? (it.question || '(poll)') : (it.title || '(post)'),
+        author: it.author || 'Unknown',
+        date: it.date || '',
+        status: it.moderation?.status || 'active'
+      }));
+  }
+
+  if (!filters.includeModeration) {
+    delete report.summary.flagged;
+    delete report.summary.removed;
+  }
+  return report;
+}
+
+function inDateRange(dateStr, range){
+  if (!range || range === 'all') return true;
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return true;
+  const days = Number(range);
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  return d >= cutoff;
+}
+
+function renderReportPreview(report){
+  const wrap = document.getElementById('reportPreview');
+  if (!report) {
+    wrap.innerHTML = `
+      <h3>Preview</h3>
+      <div class="muted small">Select filters and click Preview to view generated report data.</div>
+    `;
+    return;
+  }
+  const s = report.summary || {};
+  wrap.innerHTML = `
+    <h3>${sanitize(report.title)}</h3>
+    <div class="muted small">
+      ${sanitize(report.department)} • ${sanitize(report.type)} • ${sanitize(report.generated_at)}
+    </div>
+    <div class="report-kpis">
+      <div class="report-kpi"><div class="muted small">Total</div><strong>${sanitize(s.total_items ?? 0)}</strong></div>
+      <div class="report-kpi"><div class="muted small">Active</div><strong>${sanitize(s.active ?? 0)}</strong></div>
+      <div class="report-kpi"><div class="muted small">Posts</div><strong>${sanitize(s.posts ?? 0)}</strong></div>
+      <div class="report-kpi"><div class="muted small">Polls</div><strong>${sanitize(s.polls ?? 0)}</strong></div>
+    </div>
+    <div class="muted small">Rows in export: ${sanitize(report.rows.length)}</div>
+  `;
+}
+
+function addReportHistoryEntry(entry){
+  reportHistory.unshift(entry);
+  reportHistory = reportHistory.slice(0, 12);
+  saveReportHistory();
+  renderReportHistory();
+}
+
+function renderReportHistory(){
+  const list = document.getElementById('reportHistoryList');
+  if (!reportHistory.length) {
+    list.innerHTML = '<li><span class="muted">No reports downloaded in this browser yet.</span></li>';
+    return;
+  }
+  list.innerHTML = reportHistory.map((item) => `
+    <li>
+      <span>${sanitize(item.department)} • ${sanitize(item.type)} • ${sanitize(item.format)}</span>
+      <span class="muted">${sanitize(new Date(item.generatedAt).toLocaleString())} (${sanitize(item.rows)} rows)</span>
+    </li>
+  `).join('');
 }
 
 function escapeHtml(s) {
@@ -1102,18 +1332,19 @@ function escapeHtml(s) {
 
 function downloadXls(report) {
   const stamp = report.generated_at.slice(0, 10);
-  const file = `cisco_social_report_${report.department}_${stamp}.xls`;
+  const file = `cisco_social_report_${report.department}_${report.type}_${stamp}.xls`;
 
   const rows = [];
   rows.push(['Cisco Social Report', '', '', '', '']);
   rows.push(['Department', report.department, '', '', '']);
+  rows.push(['Report Type', report.type, '', '', '']);
   rows.push(['Generated At', report.generated_at, '', '', '']);
   rows.push(['', '', '', '', '']);
   rows.push(['Summary', '', '', '', '']);
   rows.push(['Total Items', report.summary.total_items, '', '', '']);
   rows.push(['Active', report.summary.active, '', '', '']);
-  rows.push(['Flagged', report.summary.flagged, '', '', '']);
-  rows.push(['Removed', report.summary.removed, '', '', '']);
+  if (typeof report.summary.flagged !== 'undefined') rows.push(['Flagged', report.summary.flagged, '', '', '']);
+  if (typeof report.summary.removed !== 'undefined') rows.push(['Removed', report.summary.removed, '', '', '']);
   rows.push(['Posts', report.summary.posts, '', '', '']);
   rows.push(['Polls', report.summary.polls, '', '', '']);
   rows.push(['', '', '', '', '']);
@@ -1139,18 +1370,19 @@ function downloadXls(report) {
 
 function downloadPdf(report) {
   const stamp = report.generated_at.slice(0, 10);
-  const file = `cisco_social_report_${report.department}_${stamp}.pdf`;
+  const file = `cisco_social_report_${report.department}_${report.type}_${stamp}.pdf`;
 
   const lines = [
     report.title,
     `Department: ${report.department}`,
+    `Report Type: ${report.type}`,
     `Generated: ${report.generated_at}`,
     ``,
     `Summary`,
     `  Total Items: ${report.summary.total_items}`,
     `  Active: ${report.summary.active}`,
-    `  Flagged: ${report.summary.flagged}`,
-    `  Removed: ${report.summary.removed}`,
+    ...(typeof report.summary.flagged !== 'undefined' ? [`  Flagged: ${report.summary.flagged}`] : []),
+    ...(typeof report.summary.removed !== 'undefined' ? [`  Removed: ${report.summary.removed}`] : []),
     `  Posts: ${report.summary.posts}`,
     `  Polls: ${report.summary.polls}`,
     ``,
@@ -1513,6 +1745,7 @@ document.addEventListener('keydown', (e) => {
 ----------------------- */
 loadTheme();
 loadState();
+loadReportHistory();
 posts = posts.map(ensureModerationFields);
 loadPolicyBanner();
 
@@ -1531,4 +1764,3 @@ window.previewItem = previewItem;
 
 </body>
 </html>
-
