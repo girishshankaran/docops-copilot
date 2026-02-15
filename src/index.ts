@@ -344,11 +344,10 @@ const fixBareHunkHeaders = (patch: string): string => {
 const checkPatchApplicable = (docPath: string, docContent: string, patch: string): { ok: boolean; error?: string } => {
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'docops-patch-check-'));
   try {
-    const aPath = path.join(tmpRoot, 'a', docPath);
-    const bDir = path.dirname(path.join(tmpRoot, 'b', docPath));
-    fs.mkdirSync(path.dirname(aPath), { recursive: true });
-    fs.mkdirSync(bDir, { recursive: true });
-    fs.writeFileSync(aPath, docContent, 'utf8');
+    // git apply expects the working-tree-relative path after stripping a/ b/ prefixes.
+    const targetPath = path.join(tmpRoot, docPath);
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    fs.writeFileSync(targetPath, docContent, 'utf8');
     fs.writeFileSync(path.join(tmpRoot, 'candidate.patch'), patch, 'utf8');
     execSync(`git apply --check "${path.join(tmpRoot, 'candidate.patch')}"`, { cwd: tmpRoot, stdio: 'pipe' });
     return { ok: true };
