@@ -578,56 +578,12 @@ const main = async () => {
     targetDebug.snippetChars = snippet.length;
     let patch: string;
     let strictRetry = false;
-    let contentFallback = false;
+    let contentFallback = !args.mock;
     if (args.mock) {
       patch = buildMockPatch(target.docsPath);
     } else {
       if (!clientBundle) throw new Error('LLM client not initialized');
-      const prompt = buildPrompt({ diff: combinedDiff, docPath: target.docsPath, docContent: snippet, styleGuide });
-      targetDebug.promptChars = prompt.length;
-      targetDebug.promptPreview = prompt.slice(0, 12000);
-      if (args.verbose) console.log(`\nPrompt for ${target.docsPath}:\n${prompt}\n`);
-      const first = await generatePatch(clientBundle!.client, clientBundle!.model, prompt, args.user);
-      patch = first.patch;
-      targetDebug.patchResponsePreview = first.raw.slice(0, 12000);
       try {
-        patch = normalizePatch(target.docsPath, docContent, patch);
-      } catch {
-        strictRetry = true;
-        const strictPrompt = buildStrictPatchPrompt({
-          diff: combinedDiff,
-          docPath: target.docsPath,
-          docContent: snippet,
-          styleGuide,
-        });
-        targetDebug.strictPromptChars = strictPrompt.length;
-        targetDebug.strictPromptPreview = strictPrompt.slice(0, 12000);
-        if (args.verbose) {
-          console.log(`\nRetrying with strict patch prompt for ${target.docsPath}\n`);
-        }
-        const second = await generatePatch(clientBundle!.client, clientBundle!.model, strictPrompt, args.user);
-        patch = second.patch;
-        targetDebug.strictPatchResponsePreview = second.raw.slice(0, 12000);
-      }
-    }
-    try {
-      patch = normalizePatch(target.docsPath, docContent, patch);
-    } catch (primaryErr) {
-      if (args.mock) {
-        debugReport.targets.push(targetDebug);
-        console.warn(`Skipping ${target.docsPath}: ${(primaryErr as Error).message}`);
-        runReport.targets.push({
-          docPath: target.docsPath,
-          matchedFiles: target.matchedFiles,
-          status: 'skipped_invalid_patch',
-          reason: (primaryErr as Error).message,
-          strictRetry,
-          contentFallback,
-        });
-        continue;
-      }
-      try {
-        contentFallback = true;
         const fullDocPrompt = buildFullDocPrompt({
           diff: combinedDiff,
           docPath: target.docsPath,
@@ -646,11 +602,11 @@ const main = async () => {
             docPath: target.docsPath,
             matchedFiles: target.matchedFiles,
             status: 'skipped_no_change',
-            reason: 'Full-content fallback produced no content changes.',
+            reason: 'LLM full-doc generation produced no content changes.',
             strictRetry,
             contentFallback,
           });
-          console.log(`No doc changes for ${target.docsPath} after full-content fallback.`);
+          console.log(`No doc changes for ${target.docsPath} after LLM full-doc generation.`);
           continue;
         }
         if (!isPatchApplicable(target.docsPath, docContent, contentPatch)) {
@@ -662,40 +618,14 @@ const main = async () => {
         }
         targetDebug.contentPatchPreview = contentPatch.slice(0, 12000);
         patch = normalizePatch(target.docsPath, docContent, contentPatch);
-      } catch (fallbackErr) {
-        if (target.docsPath === 'docs/ui/home1.md') {
-          try {
-            const deterministicDoc = buildDeterministicUiDocUpdate(docContent, combinedDiff);
-            const deterministicPatch = buildPatchFromContent(target.docsPath, docContent, deterministicDoc);
-            if (deterministicPatch) {
-              targetDebug.deterministicUiFallbackUsed = true;
-              targetDebug.contentPatchPreview = deterministicPatch.slice(0, 12000);
-              patch = normalizePatch(target.docsPath, docContent, deterministicPatch);
-              debugReport.targets.push(targetDebug);
-              writeSuggestionFiles(outDir, target.docsPath, patch);
-              collected.push({ docPath: target.docsPath, patch, matchedFiles: target.matchedFiles });
-              runReport.targets.push({
-                docPath: target.docsPath,
-                matchedFiles: target.matchedFiles,
-                status: 'generated',
-                strictRetry,
-                contentFallback: true,
-              });
-              continue;
-            }
-          } catch (detErr) {
-            targetDebug.deterministicUiFallbackUsed = true;
-            targetDebug.contentPatchPreview = `deterministic-ui-fallback-error: ${(detErr as Error).message}`;
-          }
-        }
+      } catch (e) {
         debugReport.targets.push(targetDebug);
-        const reason = `${(primaryErr as Error).message}; fallback failed: ${(fallbackErr as Error).message}`;
-        console.warn(`Skipping ${target.docsPath}: ${reason}`);
+        console.warn(`Skipping ${target.docsPath}: ${(e as Error).message}`);
         runReport.targets.push({
           docPath: target.docsPath,
           matchedFiles: target.matchedFiles,
           status: 'skipped_invalid_patch',
-          reason,
+          reason: (e as Error).message,
           strictRetry,
           contentFallback,
         });
