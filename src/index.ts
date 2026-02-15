@@ -341,7 +341,7 @@ const fixBareHunkHeaders = (patch: string): string => {
   return out.join('\n');
 };
 
-const isPatchApplicable = (docPath: string, docContent: string, patch: string): boolean => {
+const checkPatchApplicable = (docPath: string, docContent: string, patch: string): { ok: boolean; error?: string } => {
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'docops-patch-check-'));
   try {
     const aPath = path.join(tmpRoot, 'a', docPath);
@@ -350,10 +350,11 @@ const isPatchApplicable = (docPath: string, docContent: string, patch: string): 
     fs.mkdirSync(bDir, { recursive: true });
     fs.writeFileSync(aPath, docContent, 'utf8');
     fs.writeFileSync(path.join(tmpRoot, 'candidate.patch'), patch, 'utf8');
-    execSync(`git apply --check --unsafe-paths "${path.join(tmpRoot, 'candidate.patch')}"`, { cwd: tmpRoot, stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
+    execSync(`git apply --check "${path.join(tmpRoot, 'candidate.patch')}"`, { cwd: tmpRoot, stdio: 'pipe' });
+    return { ok: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { ok: false, error: msg };
   } finally {
     fs.rmSync(tmpRoot, { recursive: true, force: true });
   }
@@ -361,10 +362,15 @@ const isPatchApplicable = (docPath: string, docContent: string, patch: string): 
 
 const normalizePatch = (docPath: string, docContent: string, patch: string): string => {
   const trimmed = patch.trim();
-  if (isPatchApplicable(docPath, docContent, trimmed)) return trimmed;
+  const first = checkPatchApplicable(docPath, docContent, trimmed);
+  if (first.ok) return trimmed;
   const fixed = fixBareHunkHeaders(trimmed);
-  if (fixed !== trimmed && isPatchApplicable(docPath, docContent, fixed)) return fixed;
-  throw new Error(`Generated patch for ${docPath} is invalid/corrupt`);
+  if (fixed !== trimmed) {
+    const second = checkPatchApplicable(docPath, docContent, fixed);
+    if (second.ok) return fixed;
+    throw new Error(`Generated patch for ${docPath} is invalid/corrupt (${second.error || 'check failed'})`);
+  }
+  throw new Error(`Generated patch for ${docPath} is invalid/corrupt (${first.error || 'check failed'})`);
 };
 
 const buildPatchFromContent = (docPath: string, oldContent: string, newContent: string): string | undefined => {
@@ -615,9 +621,9 @@ const main = async () => {
           console.log(`No doc changes for ${target.docsPath} after LLM full-doc generation.`);
           continue;
         }
-        if (!isPatchApplicable(target.docsPath, docContent, contentPatch)) {
+        if (!checkPatchApplicable(target.docsPath, docContent, contentPatch).ok) {
           const replaceAllPatch = buildReplaceAllPatch(target.docsPath, docContent, updatedDoc);
-          if (isPatchApplicable(target.docsPath, docContent, replaceAllPatch)) {
+          if (checkPatchApplicable(target.docsPath, docContent, replaceAllPatch).ok) {
             contentPatch = replaceAllPatch;
             targetDebug.replaceAllPatchUsed = true;
           }
