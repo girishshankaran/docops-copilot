@@ -429,8 +429,11 @@ interface TargetDebugReport {
   combinedDiffPreview: string;
   snippetChars?: number;
   promptChars?: number;
+  promptPreview?: string;
   strictPromptChars?: number;
+  strictPromptPreview?: string;
   fullDocPromptChars?: number;
+  fullDocPromptPreview?: string;
 }
 
 const main = async () => {
@@ -529,6 +532,7 @@ const main = async () => {
       if (!clientBundle) throw new Error('LLM client not initialized');
       const prompt = buildPrompt({ diff: combinedDiff, docPath: target.docsPath, docContent: snippet, styleGuide });
       targetDebug.promptChars = prompt.length;
+      targetDebug.promptPreview = prompt.slice(0, 12000);
       if (args.verbose) console.log(`\nPrompt for ${target.docsPath}:\n${prompt}\n`);
       patch = await generatePatch(clientBundle!.client, clientBundle!.model, prompt, args.user);
       try {
@@ -542,6 +546,7 @@ const main = async () => {
           styleGuide,
         });
         targetDebug.strictPromptChars = strictPrompt.length;
+        targetDebug.strictPromptPreview = strictPrompt.slice(0, 12000);
         if (args.verbose) {
           console.log(`\nRetrying with strict patch prompt for ${target.docsPath}\n`);
         }
@@ -573,6 +578,7 @@ const main = async () => {
           styleGuide,
         });
         targetDebug.fullDocPromptChars = fullDocPrompt.length;
+        targetDebug.fullDocPromptPreview = fullDocPrompt.slice(0, 12000);
         const updatedDoc = await generateUpdatedDoc(clientBundle!.client, clientBundle!.model, fullDocPrompt, args.user);
         const contentPatch = buildPatchFromContent(target.docsPath, docContent, updatedDoc);
         if (!contentPatch) {
