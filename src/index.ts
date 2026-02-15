@@ -617,6 +617,26 @@ const main = async () => {
         const updatedDoc = full.doc;
         let contentPatch = buildPatchFromContent(target.docsPath, docContent, updatedDoc);
         if (!contentPatch) {
+          if (target.docsPath === 'docs/ui/home1.md') {
+            const deterministicDoc = buildDeterministicUiDocUpdate(docContent, combinedDiff);
+            const deterministicPatch = buildPatchFromContent(target.docsPath, docContent, deterministicDoc);
+            if (deterministicPatch) {
+              targetDebug.deterministicUiFallbackUsed = true;
+              targetDebug.contentPatchPreview = deterministicPatch.slice(0, 12000);
+              patch = normalizePatch(target.docsPath, docContent, deterministicPatch);
+              debugReport.targets.push(targetDebug);
+              writeSuggestionFiles(outDir, target.docsPath, patch);
+              collected.push({ docPath: target.docsPath, patch, matchedFiles: target.matchedFiles });
+              runReport.targets.push({
+                docPath: target.docsPath,
+                matchedFiles: target.matchedFiles,
+                status: 'generated',
+                strictRetry,
+                contentFallback,
+              });
+              continue;
+            }
+          }
           debugReport.targets.push(targetDebug);
           runReport.targets.push({
             docPath: target.docsPath,
@@ -639,6 +659,31 @@ const main = async () => {
         targetDebug.contentPatchPreview = contentPatch.slice(0, 12000);
         patch = normalizePatch(target.docsPath, docContent, contentPatch);
       } catch (e) {
+        if (target.docsPath === 'docs/ui/home1.md') {
+          try {
+            const deterministicDoc = buildDeterministicUiDocUpdate(docContent, combinedDiff);
+            const deterministicPatch = buildPatchFromContent(target.docsPath, docContent, deterministicDoc);
+            if (deterministicPatch) {
+              targetDebug.deterministicUiFallbackUsed = true;
+              targetDebug.contentPatchPreview = deterministicPatch.slice(0, 12000);
+              patch = normalizePatch(target.docsPath, docContent, deterministicPatch);
+              debugReport.targets.push(targetDebug);
+              writeSuggestionFiles(outDir, target.docsPath, patch);
+              collected.push({ docPath: target.docsPath, patch, matchedFiles: target.matchedFiles });
+              runReport.targets.push({
+                docPath: target.docsPath,
+                matchedFiles: target.matchedFiles,
+                status: 'generated',
+                strictRetry,
+                contentFallback,
+              });
+              continue;
+            }
+          } catch (detErr) {
+            targetDebug.deterministicUiFallbackUsed = true;
+            targetDebug.contentPatchPreview = `deterministic-ui-fallback-error: ${(detErr as Error).message}`;
+          }
+        }
         debugReport.targets.push(targetDebug);
         console.warn(`Skipping ${target.docsPath}: ${(e as Error).message}`);
         runReport.targets.push({
