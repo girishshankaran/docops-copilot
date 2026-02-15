@@ -44,7 +44,14 @@ jobs:
               git diff --unified=3 "origin/${base_ref}..HEAD" > /tmp/diff.patch
             fi
           else
-            git diff --unified=3 HEAD^ HEAD > /tmp/diff.patch
+            before="${{ github.event.before }}"
+            after="${{ github.sha }}"
+            if [ -n "${before}" ] && [ "${before}" != "0000000000000000000000000000000000000000" ]; then
+              git diff --unified=3 "${before}" "${after}" > /tmp/diff.patch
+            else
+              echo "Push event has no valid 'before' SHA; falling back to HEAD^..HEAD."
+              git diff --unified=3 HEAD^ HEAD > /tmp/diff.patch
+            fi
           fi
       - name: Mint Cisco Chat-AI access token
         env:
