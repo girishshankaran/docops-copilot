@@ -229,7 +229,7 @@ const generatePatch = async (
   model: string,
   prompt: string,
   user?: string,
-): Promise<string> => {
+): Promise<{ patch: string; raw: string }> => {
   const completion = await client.chat.completions.create({
     model,
     temperature: 0.2,
@@ -244,7 +244,7 @@ const generatePatch = async (
   }
   const text = (completion as any).choices[0]?.message?.content || '';
   const match = text.match(/```patch\n([\s\S]*?)```/);
-  return match ? match[1].trim() : text.trim();
+  return { patch: match ? match[1].trim() : text.trim(), raw: text };
 };
 
 const generateUpdatedDoc = async (
@@ -252,7 +252,7 @@ const generateUpdatedDoc = async (
   model: string,
   prompt: string,
   user?: string,
-): Promise<string> => {
+): Promise<{ doc: string; raw: string }> => {
   const completion = await client.chat.completions.create({
     model,
     temperature: 0.2,
@@ -267,7 +267,7 @@ const generateUpdatedDoc = async (
   }
   const text = (completion as any).choices[0]?.message?.content || '';
   const fenced = text.match(/```(?:markdown|md)?\n([\s\S]*?)```/i);
-  return (fenced ? fenced[1] : text).trim();
+  return { doc: (fenced ? fenced[1] : text).trim(), raw: text };
 };
 
 const ensureDir = (p: string) => {
@@ -391,6 +391,24 @@ const buildPatchFromContent = (docPath: string, oldContent: string, newContent: 
   }
 };
 
+const buildReplaceAllPatch = (docPath: string, oldContent: string, newContent: string): string => {
+  const oldLines = oldContent.split('\n');
+  const newLines = newContent.split('\n');
+  const oldCount = oldLines.length;
+  const newCount = newLines.length;
+  const body = [
+    ...oldLines.map((l) => `-${l}`),
+    ...newLines.map((l) => `+${l}`),
+  ].join('\n');
+  return [
+    `diff --git a/${docPath} b/${docPath}`,
+    `--- a/${docPath}`,
+    `+++ b/${docPath}`,
+    `@@ -1,${oldCount} +1,${newCount} @@`,
+    body,
+  ].join('\n');
+};
+
 const buildMockPatch = (docPath: string): string =>
   [
     `diff --git a/${docPath} b/${docPath}`,
@@ -434,6 +452,11 @@ interface TargetDebugReport {
   strictPromptPreview?: string;
   fullDocPromptChars?: number;
   fullDocPromptPreview?: string;
+  patchResponsePreview?: string;
+  strictPatchResponsePreview?: string;
+  fullDocResponsePreview?: string;
+  contentPatchPreview?: string;
+  replaceAllPatchUsed?: boolean;
 }
 
 const main = async () => {
@@ -534,7 +557,9 @@ const main = async () => {
       targetDebug.promptChars = prompt.length;
       targetDebug.promptPreview = prompt.slice(0, 12000);
       if (args.verbose) console.log(`\nPrompt for ${target.docsPath}:\n${prompt}\n`);
-      patch = await generatePatch(clientBundle!.client, clientBundle!.model, prompt, args.user);
+      const first = await generatePatch(clientBundle!.client, clientBundle!.model, prompt, args.user);
+      patch = first.patch;
+      targetDebug.patchResponsePreview = first.raw.slice(0, 12000);
       try {
         patch = normalizePatch(target.docsPath, docContent, patch);
       } catch {
@@ -550,7 +575,9 @@ const main = async () => {
         if (args.verbose) {
           console.log(`\nRetrying with strict patch prompt for ${target.docsPath}\n`);
         }
-        patch = await generatePatch(clientBundle!.client, clientBundle!.model, strictPrompt, args.user);
+        const second = await generatePatch(clientBundle!.client, clientBundle!.model, strictPrompt, args.user);
+        patch = second.patch;
+        targetDebug.strictPatchResponsePreview = second.raw.slice(0, 12000);
       }
     }
     try {
@@ -579,8 +606,10 @@ const main = async () => {
         });
         targetDebug.fullDocPromptChars = fullDocPrompt.length;
         targetDebug.fullDocPromptPreview = fullDocPrompt.slice(0, 12000);
-        const updatedDoc = await generateUpdatedDoc(clientBundle!.client, clientBundle!.model, fullDocPrompt, args.user);
-        const contentPatch = buildPatchFromContent(target.docsPath, docContent, updatedDoc);
+        const full = await generateUpdatedDoc(clientBundle!.client, clientBundle!.model, fullDocPrompt, args.user);
+        targetDebug.fullDocResponsePreview = full.raw.slice(0, 12000);
+        const updatedDoc = full.doc;
+        let contentPatch = buildPatchFromContent(target.docsPath, docContent, updatedDoc);
         if (!contentPatch) {
           debugReport.targets.push(targetDebug);
           runReport.targets.push({
@@ -594,6 +623,14 @@ const main = async () => {
           console.log(`No doc changes for ${target.docsPath} after full-content fallback.`);
           continue;
         }
+        if (!isPatchApplicable(target.docsPath, docContent, contentPatch)) {
+          const replaceAllPatch = buildReplaceAllPatch(target.docsPath, docContent, updatedDoc);
+          if (isPatchApplicable(target.docsPath, docContent, replaceAllPatch)) {
+            contentPatch = replaceAllPatch;
+            targetDebug.replaceAllPatchUsed = true;
+          }
+        }
+        targetDebug.contentPatchPreview = contentPatch.slice(0, 12000);
         patch = normalizePatch(target.docsPath, docContent, contentPatch);
       } catch (fallbackErr) {
         debugReport.targets.push(targetDebug);
