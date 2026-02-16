@@ -1,9 +1,15 @@
 mappings:
   - code: "src/api/**/*.ts"
-    docs: "docs/api.md"
-    anchor: "API"
+    docs:
+      - path: "docs/api.md"
+        anchor: "API"
+      - path: "docs/release-notes.md"
+        anchor: "Unreleased"
   - code: "cli/**"
-    docs: "docs/cli.md"
+    docs:
+      - "docs/cli.md"
+      - path: "docs/release-notes.md"
+        anchor: "Unreleased"
   - code: "config/**/*"
     docs: "docs/configuration.md"
 fallback:
