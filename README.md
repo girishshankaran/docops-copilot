@@ -138,6 +138,7 @@ jobs:
   - an array of string paths, or
   - an array of objects with per-doc anchors (`path` + optional `anchor`).
 - If multiple mappings target the same doc, matched code files are merged and one patch is generated for that doc target.
+- If a mapped target Markdown file does not exist in the docs repo, the tool bootstraps a starter document and generates a new-file patch.
 - Style guide is optional; when present it is fed to the model to preserve tone.
 - LLM config:
   - Cisco Chat-AI gateway (recommended): set `BRIDGE_OAUTH_BASIC` (used to mint fresh short-lived JWT per run) and `BRIDGE_API_APP_KEY` (app key used in request `user`), plus `OPENAI_BASE_URL`/`OPENAI_MODEL`.
