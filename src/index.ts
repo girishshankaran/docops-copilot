@@ -147,6 +147,13 @@ const parseDiffFiles = (diff: string): Map<string, string> => {
   return fileToDiff;
 };
 
+const isDeletedFileDiff = (fileDiff: string): boolean => {
+  if (!fileDiff) return false;
+  if (/^deleted file mode\s+/m.test(fileDiff)) return true;
+  if (/^---\s+a\/.+$/m.test(fileDiff) && /^\+\+\+\s+\/dev\/null$/m.test(fileDiff)) return true;
+  return false;
+};
+
 const resolveTargets = (files: string[], map: DocsMap): TargetDoc[] => {
   const byDoc = new Map<string, TargetDoc>();
   const keyOf = (docsPath: string, anchor?: string) => `${docsPath}::${anchor || ''}`;
@@ -492,6 +499,34 @@ const buildNewFilePatch = (docPath: string, content: string): string => {
   ].join('\n');
 };
 
+const buildDeleteFilePatch = (docPath: string, oldContent: string): string => {
+  const normalizedOld = oldContent.replace(/\r\n/g, '\n');
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'docops-delete-diff-'));
+  try {
+    const oldPath = path.join(tmpRoot, 'old.md');
+    fs.writeFileSync(oldPath, normalizedOld, 'utf8');
+    const res = spawnSync('git', ['diff', '--no-index', '--unified=3', oldPath, '/dev/null'], { encoding: 'utf8' });
+    if (res.status !== 0 && res.status !== 1) {
+      throw new Error(res.stderr?.trim() || `git diff failed with status ${res.status}`);
+    }
+    const raw = (res.stdout || '').replace(/\r\n/g, '\n');
+    const lines = raw.split('\n');
+    const deletedMode = lines.find((l) => l.startsWith('deleted file mode')) || 'deleted file mode 100644';
+    const hunkStart = lines.findIndex((l) => l.startsWith('@@ '));
+    if (hunkStart < 0) throw new Error(`failed to build delete patch hunk for ${docPath}`);
+    const hunks = lines.slice(hunkStart).join('\n').replace(/\n*$/, '\n');
+    return [
+      `diff --git a/${docPath} b/${docPath}`,
+      deletedMode,
+      `--- a/${docPath}`,
+      '+++ /dev/null',
+      hunks,
+    ].join('\n').replace(/\n*$/, '\n');
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+};
+
 const buildDeterministicUiDocUpdate = (docContent: string, combinedDiff: string): string => {
   const diffLower = combinedDiff.toLowerCase();
   const added = combinedDiff
@@ -736,10 +771,24 @@ const main = async () => {
     };
     let docContent = '';
     let docExists = true;
+    const deletionOnlyTarget = target.matchedFiles.length > 0
+      && target.matchedFiles.every((f) => isDeletedFileDiff(fileDiffs.get(f) || ''));
+    const deleteTargetDoc = deletionOnlyTarget && !/release-notes\.md$/i.test(target.docsPath);
     try {
       docContent = await fetchFileFromRepo(octokit, docsRepo, target.docsPath, docsBranch);
     } catch (e) {
       const msg = (e as Error).message;
+      if (deleteTargetDoc && /Not Found/i.test(msg)) {
+        debugReport.targets.push(targetDebug);
+        runReport.targets.push({
+          docPath: target.docsPath,
+          matchedFiles: target.matchedFiles,
+          status: 'skipped_no_change',
+          reason: 'Target doc already absent for delete-only code changes.',
+        });
+        console.log(`No doc deletion needed for ${target.docsPath}; file already absent.`);
+        continue;
+      }
       if (/Not Found/i.test(msg)) {
         docExists = false;
         docContent = buildSeedDocContent(target.docsPath);
@@ -760,6 +809,22 @@ const main = async () => {
     targetDebug.combinedDiffChars = combinedDiff.length;
     targetDebug.combinedDiffPreview = combinedDiff.slice(0, 1600);
     targetDebug.snippetChars = snippet.length;
+    if (deleteTargetDoc && docExists) {
+      const deletePatch = buildDeleteFilePatch(target.docsPath, docContent);
+      targetDebug.contentPatchPreview = deletePatch.slice(0, 12000);
+      const normalizedDeletePatch = normalizePatch(target.docsPath, docContent, deletePatch, true);
+      debugReport.targets.push(targetDebug);
+      writeSuggestionFiles(outDir, target.docsPath, normalizedDeletePatch);
+      collected.push({ docPath: target.docsPath, patch: normalizedDeletePatch, matchedFiles: target.matchedFiles });
+      runReport.targets.push({
+        docPath: target.docsPath,
+        matchedFiles: target.matchedFiles,
+        status: 'generated',
+        strictRetry: false,
+        contentFallback: false,
+      });
+      continue;
+    }
     let patch: string;
     let strictRetry = false;
     let contentFallback = !args.mock;
