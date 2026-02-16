@@ -7,9 +7,14 @@ import { Octokit } from '@octokit/rest';
 import { minimatch } from 'minimatch';
 import OpenAI, { AzureOpenAI } from 'openai';
 
+interface DocsMapDocEntry {
+  path: string;
+  anchor?: string;
+}
+
 interface DocsMapMapping {
   code: string;
-  docs: string;
+  docs: string | Array<string | DocsMapDocEntry>;
   anchor?: string;
 }
 
@@ -99,6 +104,21 @@ const loadDocsMap = (p: string): DocsMap => {
   if (!parsed.mappings || !Array.isArray(parsed.mappings)) {
     throw new Error('docs-map must include mappings[]');
   }
+  for (const m of parsed.mappings) {
+    if (!m || typeof m.code !== 'string' || !m.code.trim()) {
+      throw new Error('docs-map mapping.code must be a non-empty string');
+    }
+    if (typeof m.docs === 'string') continue;
+    if (!Array.isArray(m.docs) || m.docs.length === 0) {
+      throw new Error('docs-map mapping.docs must be a string or non-empty array');
+    }
+    for (const d of m.docs) {
+      if (typeof d === 'string') continue;
+      if (!d || typeof d.path !== 'string' || !d.path.trim()) {
+        throw new Error('docs-map mapping.docs[].path must be a non-empty string');
+      }
+    }
+  }
   return parsed;
 };
 
@@ -128,13 +148,25 @@ const parseDiffFiles = (diff: string): Map<string, string> => {
 };
 
 const resolveTargets = (files: string[], map: DocsMap): TargetDoc[] => {
-  const targets: TargetDoc[] = [];
+  const byDoc = new Map<string, TargetDoc>();
+  const keyOf = (docsPath: string, anchor?: string) => `${docsPath}::${anchor || ''}`;
   for (const m of map.mappings) {
     const matched = files.filter((f) => minimatch(f, m.code, { dot: true }));
     if (matched.length === 0) continue;
-    targets.push({ docsPath: m.docs, anchor: m.anchor, matchedFiles: matched });
+    const docsEntries: DocsMapDocEntry[] = typeof m.docs === 'string'
+      ? [{ path: m.docs, anchor: m.anchor }]
+      : m.docs.map((d) => (typeof d === 'string' ? { path: d, anchor: m.anchor } : { path: d.path, anchor: d.anchor || m.anchor }));
+    for (const entry of docsEntries) {
+      const key = keyOf(entry.path, entry.anchor);
+      const existing = byDoc.get(key);
+      if (!existing) {
+        byDoc.set(key, { docsPath: entry.path, anchor: entry.anchor, matchedFiles: Array.from(new Set(matched)) });
+      } else {
+        existing.matchedFiles = Array.from(new Set([...existing.matchedFiles, ...matched]));
+      }
+    }
   }
-  return targets;
+  return Array.from(byDoc.values());
 };
 
 const fetchFileFromRepo = async (octokit: Octokit, repo: string, filePath: string, ref: string): Promise<string> => {

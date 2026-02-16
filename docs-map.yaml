@@ -1,7 +1,9 @@
 mappings:
   - code: "src/api/**/*.ts"
-    docs: "docs/api.md"
-    anchor: "API"
+    docs:
+      - path: "docs/api.md"
+        anchor: "API"
+      - path: "docs/STYLE.md"
   - code: "cli/**"
     docs: "docs/cli.md"
   - code: "config/**/*"

@@ -121,12 +121,23 @@ jobs:
   ```yaml
   mappings:
     - code: "src/api/**/*.ts"
-      docs: "docs/api.md"
-      anchor: "API"
+      docs:
+        - path: "docs/api.md"
+          anchor: "API"
+        - path: "docs/release-notes.md"
+          anchor: "Unreleased"
     - code: "cli/**"
-      docs: "docs/cli.md"
+      docs:
+        - "docs/cli.md"
+        - path: "docs/release-notes.md"
+          anchor: "Unreleased"
   style_guide: "docs/STYLE.md"
   ```
+- `docs` supports:
+  - a single string path (`docs: "docs/api.md"`),
+  - an array of string paths, or
+  - an array of objects with per-doc anchors (`path` + optional `anchor`).
+- If multiple mappings target the same doc, matched code files are merged and one patch is generated for that doc target.
 - Style guide is optional; when present it is fed to the model to preserve tone.
 - LLM config:
   - Cisco Chat-AI gateway (recommended): set `BRIDGE_OAUTH_BASIC` (used to mint fresh short-lived JWT per run) and `BRIDGE_API_APP_KEY` (app key used in request `user`), plus `OPENAI_BASE_URL`/`OPENAI_MODEL`.
