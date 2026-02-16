@@ -182,6 +182,19 @@ jobs:
 - `src/apply-patch.ts` – convenience helper to apply a saved patch via `git apply`.
 - `docs-map.example.yaml` – starter mapping file.
 - `.env.example` – required secrets.
+- `templates/feature-doc.template.md` – starter template for per-feature docs.
+- `templates/release-notes.template.md` – starter template for release notes format.
+- `templates/repo-init-checklist.md` – new product docs initialization checklist.
+
+## Documentation standards (new products)
+- Keep each feature in one Markdown file (for example, `feature-name.md`).
+- Include these sections in each feature file when applicable:
+  - `Overview` (mandatory)
+  - `Configuration & Installation`
+  - `API Documentation`
+  - `Troubleshooting`
+- Keep release notes in `release-notes.md` as a standalone aggregate.
+- Group release notes by date/version and link each new feature entry back to its feature doc.
 
 ## Limitations
 - Requires OpenAI API access and GitHub token with repo scope.
