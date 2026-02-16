@@ -231,9 +231,8 @@ jobs:
           fi
           git config --global user.name "doc-bot"
           git config --global user.email "doc-bot@users.noreply.github.com"
-          git clone --depth=1 "https://${DOCS_PAT}@github.com/${DOCS_REPO}.git" /tmp/docs-repo
+          git clone --depth=1 --branch "${DOCS_BRANCH}" "https://${DOCS_PAT}@github.com/${DOCS_REPO}.git" /tmp/docs-repo
           cd /tmp/docs-repo
-          git checkout "${DOCS_BRANCH}"
           applied=0
           for p in "$GITHUB_WORKSPACE"/suggestions/*.patch; do
             echo "Applying $p"
@@ -252,6 +251,7 @@ jobs:
             echo "No changes after applying patches."
             exit 0
           fi
-          git commit -am "Docs: auto-update from code change ($GITHUB_RUN_ID)"
+          git add -A
+          git commit -m "Docs: auto-update from code change ($GITHUB_RUN_ID)"
           git push origin "${DOCS_BRANCH}"
         shell: bash
