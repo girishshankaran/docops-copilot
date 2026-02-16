@@ -3,15 +3,14 @@ mappings:
     docs:
       - path: "docs/api.md"
         anchor: "API"
-      - path: "docs/release-notes.md"
-        anchor: "Unreleased"
   - code: "cli/**"
     docs:
       - "docs/cli.md"
-      - path: "docs/release-notes.md"
-        anchor: "Unreleased"
   - code: "config/**/*"
     docs: "docs/configuration.md"
+release_notes:
+  path: "docs/release-notes.md"
+  anchor: "New Features"
 fallback:
   search_headings: true
 style_guide: "docs/STYLE.md"
