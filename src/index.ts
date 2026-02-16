@@ -270,9 +270,23 @@ const buildFullDocPrompt = (params: {
   const { diff, docPath, docContent, styleGuide, releaseNotesHint } = params;
   const guideBlock = styleGuide ? `Style guide (respect tone, voice, formatting):\n${styleGuide}\n` : '';
   const releaseNotesBlock = releaseNotesHint ? `Release notes policy (required for this target):\n${releaseNotesHint}\n` : '';
+  const standardsBlock = [
+    'Documentation standards:',
+    '- For feature docs, keep documentation for a feature in a single Markdown file and include these sections when applicable:',
+    '  - Overview',
+    '  - Configuration & Installation',
+    '  - API Documentation',
+    '  - Troubleshooting',
+    '- For release notes (`release-notes.md`):',
+    '  - Keep it as a standalone aggregate file.',
+    '  - Organize entries by date or version.',
+    '  - For new features, add/update a row under "New Features" with columns: Feature | Description | More Information.',
+    '  - Link each release-note feature entry to its primary feature documentation file when possible.',
+  ].join('\n');
   return [
     'You are an expert technical writer. Update the Markdown documentation based on the provided code diff.',
     guideBlock,
+    standardsBlock,
     releaseNotesBlock,
     `Target doc: ${docPath}`,
     'Editing rules (strict):',
