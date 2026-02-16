@@ -147,6 +147,13 @@ const parseDiffFiles = (diff: string): Map<string, string> => {
   return fileToDiff;
 };
 
+const isDeletedFileDiff = (fileDiff: string): boolean => {
+  if (!fileDiff) return false;
+  if (/^deleted file mode\s+/m.test(fileDiff)) return true;
+  if (/^---\s+a\/.+$/m.test(fileDiff) && /^\+\+\+\s+\/dev\/null$/m.test(fileDiff)) return true;
+  return false;
+};
+
 const resolveTargets = (files: string[], map: DocsMap): TargetDoc[] => {
   const byDoc = new Map<string, TargetDoc>();
   const keyOf = (docsPath: string, anchor?: string) => `${docsPath}::${anchor || ''}`;
@@ -388,13 +395,20 @@ const fixBareHunkHeaders = (patch: string): string => {
   return out.join('\n');
 };
 
-const checkPatchApplicable = (docPath: string, docContent: string, patch: string): { ok: boolean; error?: string } => {
+const checkPatchApplicable = (
+  docPath: string,
+  docContent: string,
+  patch: string,
+  fileExists = true,
+): { ok: boolean; error?: string } => {
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'docops-patch-check-'));
   try {
-    // git apply expects the working-tree-relative path after stripping a/ b/ prefixes.
-    const targetPath = path.join(tmpRoot, docPath);
-    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-    fs.writeFileSync(targetPath, docContent, 'utf8');
+    if (fileExists) {
+      // git apply expects the working-tree-relative path after stripping a/ b/ prefixes.
+      const targetPath = path.join(tmpRoot, docPath);
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+      fs.writeFileSync(targetPath, docContent, 'utf8');
+    }
     fs.writeFileSync(path.join(tmpRoot, 'candidate.patch'), patch, 'utf8');
     execSync(`git apply --check "${path.join(tmpRoot, 'candidate.patch')}"`, { cwd: tmpRoot, stdio: 'pipe' });
     return { ok: true };
@@ -406,15 +420,15 @@ const checkPatchApplicable = (docPath: string, docContent: string, patch: string
   }
 };
 
-const normalizePatch = (docPath: string, docContent: string, patch: string): string => {
+const normalizePatch = (docPath: string, docContent: string, patch: string, fileExists = true): string => {
   const normalized = patch.replace(/\r\n/g, '\n');
   const candidate = normalized.endsWith('\n') ? normalized : `${normalized}\n`;
-  const first = checkPatchApplicable(docPath, docContent, candidate);
+  const first = checkPatchApplicable(docPath, docContent, candidate, fileExists);
   if (first.ok) return candidate;
   const fixed = fixBareHunkHeaders(candidate);
   if (fixed !== candidate) {
     const fixedWithNl = fixed.endsWith('\n') ? fixed : `${fixed}\n`;
-    const second = checkPatchApplicable(docPath, docContent, fixedWithNl);
+    const second = checkPatchApplicable(docPath, docContent, fixedWithNl, fileExists);
     if (second.ok) return fixedWithNl;
     throw new Error(`Generated patch for ${docPath} is invalid/corrupt (${second.error || 'check failed'})`);
   }
@@ -468,6 +482,49 @@ const buildReplaceAllPatch = (docPath: string, oldContent: string, newContent: s
     `@@ -1,${oldCount} +1,${newCount} @@`,
     body,
   ].join('\n');
+};
+
+const buildNewFilePatch = (docPath: string, content: string): string => {
+  const normalized = content.replace(/\r\n/g, '\n');
+  const lines = normalized.split('\n');
+  const count = lines.length;
+  const added = lines.map((l) => `+${l}`).join('\n');
+  return [
+    `diff --git a/${docPath} b/${docPath}`,
+    'new file mode 100644',
+    '--- /dev/null',
+    `+++ b/${docPath}`,
+    `@@ -0,0 +1,${count} @@`,
+    added,
+  ].join('\n');
+};
+
+const buildDeleteFilePatch = (docPath: string, oldContent: string): string => {
+  const normalizedOld = oldContent.replace(/\r\n/g, '\n');
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'docops-delete-diff-'));
+  try {
+    const oldPath = path.join(tmpRoot, 'old.md');
+    fs.writeFileSync(oldPath, normalizedOld, 'utf8');
+    const res = spawnSync('git', ['diff', '--no-index', '--unified=3', oldPath, '/dev/null'], { encoding: 'utf8' });
+    if (res.status !== 0 && res.status !== 1) {
+      throw new Error(res.stderr?.trim() || `git diff failed with status ${res.status}`);
+    }
+    const raw = (res.stdout || '').replace(/\r\n/g, '\n');
+    const lines = raw.split('\n');
+    const deletedMode = lines.find((l) => l.startsWith('deleted file mode')) || 'deleted file mode 100644';
+    const hunkStart = lines.findIndex((l) => l.startsWith('@@ '));
+    if (hunkStart < 0) throw new Error(`failed to build delete patch hunk for ${docPath}`);
+    const hunks = lines.slice(hunkStart).join('\n').replace(/\n*$/, '\n');
+    return [
+      `diff --git a/${docPath} b/${docPath}`,
+      deletedMode,
+      `--- a/${docPath}`,
+      '+++ /dev/null',
+      hunks,
+    ].join('\n').replace(/\n*$/, '\n');
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
 };
 
 const buildDeterministicUiDocUpdate = (docContent: string, combinedDiff: string): string => {
@@ -555,6 +612,52 @@ const buildMockPatch = (docPath: string): string =>
     '@@ -1,0 +1,1 @@',
     '+<!-- mock patch: generated locally without OpenAI -->',
   ].join('\n');
+
+const formatDocTitleFromPath = (docPath: string): string => {
+  const base = path.basename(docPath).replace(/\.md$/i, '');
+  return base
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(' ') || 'Feature';
+};
+
+const buildReleaseNotesSeed = (): string => {
+  const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+  return [
+    '# Release Notes',
+    '',
+    date,
+    '',
+    '## New Features',
+    'Feature | Description | More Information',
+    '--- | --- | ---',
+  ].join('\n');
+};
+
+const buildFeatureDocSeed = (docPath: string): string => {
+  const title = formatDocTitleFromPath(docPath);
+  return [
+    `# ${title}`,
+    '',
+    '## Overview',
+    'Describe the feature, its use case, and its value proposition.',
+    '',
+    '## Configuration & Installation',
+    'Document setup, prerequisites, environment variables, and dependencies.',
+    '',
+    '## API Documentation',
+    'Document endpoints, request parameters, response schema, and examples.',
+    '',
+    '## Troubleshooting',
+    'List common issues, error messages/codes, and resolution steps.',
+  ].join('\n');
+};
+
+const buildSeedDocContent = (docPath: string): string => {
+  if (/release-notes\.md$/i.test(docPath)) return buildReleaseNotesSeed();
+  return buildFeatureDocSeed(docPath);
+};
 
 const buildCommentBody = (items: { docPath: string; patch: string; matchedFiles: string[] }[]): string => {
   const lines: string[] = [];
@@ -666,30 +769,67 @@ const main = async () => {
       combinedDiffChars: 0,
       combinedDiffPreview: '',
     };
-    let docContent: string;
+    let docContent = '';
+    let docExists = true;
+    const deletionOnlyTarget = target.matchedFiles.length > 0
+      && target.matchedFiles.every((f) => isDeletedFileDiff(fileDiffs.get(f) || ''));
+    const deleteTargetDoc = deletionOnlyTarget && !/release-notes\.md$/i.test(target.docsPath);
     try {
       docContent = await fetchFileFromRepo(octokit, docsRepo, target.docsPath, docsBranch);
     } catch (e) {
-      debugReport.targets.push(targetDebug);
-      runReport.targets.push({
-        docPath: target.docsPath,
-        matchedFiles: target.matchedFiles,
-        status: 'fetch_failed',
-        reason: (e as Error).message,
-      });
-      console.warn(`Skipping ${target.docsPath}: ${(e as Error).message}`);
-      continue;
+      const msg = (e as Error).message;
+      if (deleteTargetDoc && /Not Found/i.test(msg)) {
+        debugReport.targets.push(targetDebug);
+        runReport.targets.push({
+          docPath: target.docsPath,
+          matchedFiles: target.matchedFiles,
+          status: 'skipped_no_change',
+          reason: 'Target doc already absent for delete-only code changes.',
+        });
+        console.log(`No doc deletion needed for ${target.docsPath}; file already absent.`);
+        continue;
+      }
+      if (/Not Found/i.test(msg)) {
+        docExists = false;
+        docContent = buildSeedDocContent(target.docsPath);
+      } else {
+        debugReport.targets.push(targetDebug);
+        runReport.targets.push({
+          docPath: target.docsPath,
+          matchedFiles: target.matchedFiles,
+          status: 'fetch_failed',
+          reason: msg,
+        });
+        console.warn(`Skipping ${target.docsPath}: ${msg}`);
+        continue;
+      }
     }
     const snippet = extractSection(docContent, target.anchor);
     const combinedDiff = target.matchedFiles.map((f) => fileDiffs.get(f) || '').join('\n');
     targetDebug.combinedDiffChars = combinedDiff.length;
     targetDebug.combinedDiffPreview = combinedDiff.slice(0, 1600);
     targetDebug.snippetChars = snippet.length;
+    if (deleteTargetDoc && docExists) {
+      const deletePatch = buildDeleteFilePatch(target.docsPath, docContent);
+      targetDebug.contentPatchPreview = deletePatch.slice(0, 12000);
+      const normalizedDeletePatch = normalizePatch(target.docsPath, docContent, deletePatch, true);
+      debugReport.targets.push(targetDebug);
+      writeSuggestionFiles(outDir, target.docsPath, normalizedDeletePatch);
+      collected.push({ docPath: target.docsPath, patch: normalizedDeletePatch, matchedFiles: target.matchedFiles });
+      runReport.targets.push({
+        docPath: target.docsPath,
+        matchedFiles: target.matchedFiles,
+        status: 'generated',
+        strictRetry: false,
+        contentFallback: false,
+      });
+      continue;
+    }
     let patch: string;
     let strictRetry = false;
     let contentFallback = !args.mock;
     if (args.mock) {
-      patch = buildMockPatch(target.docsPath);
+      patch = docExists ? buildMockPatch(target.docsPath) : buildNewFilePatch(target.docsPath, docContent);
     } else {
       if (!clientBundle) throw new Error('LLM client not initialized');
       try {
@@ -704,7 +844,9 @@ const main = async () => {
         const full = await generateUpdatedDoc(clientBundle!.client, clientBundle!.model, fullDocPrompt, args.user);
         targetDebug.fullDocResponsePreview = full.raw.slice(0, 12000);
         const updatedDoc = full.doc;
-        let contentPatch = buildPatchFromContent(target.docsPath, docContent, updatedDoc);
+        let contentPatch = docExists
+          ? buildPatchFromContent(target.docsPath, docContent, updatedDoc)
+          : buildNewFilePatch(target.docsPath, updatedDoc);
         if (!contentPatch) {
           if (!args.llmOnly && target.docsPath === 'docs/ui/home1.md') {
             const deterministicDoc = buildDeterministicUiDocUpdate(docContent, combinedDiff);
@@ -712,7 +854,7 @@ const main = async () => {
             if (deterministicPatch) {
               targetDebug.deterministicUiFallbackUsed = true;
               targetDebug.contentPatchPreview = deterministicPatch.slice(0, 12000);
-              patch = normalizePatch(target.docsPath, docContent, deterministicPatch);
+              patch = normalizePatch(target.docsPath, docContent, deterministicPatch, docExists);
               debugReport.targets.push(targetDebug);
               writeSuggestionFiles(outDir, target.docsPath, patch);
               collected.push({ docPath: target.docsPath, patch, matchedFiles: target.matchedFiles });
@@ -738,15 +880,15 @@ const main = async () => {
           console.log(`No doc changes for ${target.docsPath} after LLM full-doc generation.`);
           continue;
         }
-        if (!checkPatchApplicable(target.docsPath, docContent, contentPatch).ok) {
+        if (docExists && !checkPatchApplicable(target.docsPath, docContent, contentPatch, docExists).ok) {
           const replaceAllPatch = buildReplaceAllPatch(target.docsPath, docContent, updatedDoc);
-          if (!args.llmOnly && checkPatchApplicable(target.docsPath, docContent, replaceAllPatch).ok) {
+          if (!args.llmOnly && checkPatchApplicable(target.docsPath, docContent, replaceAllPatch, docExists).ok) {
             contentPatch = replaceAllPatch;
             targetDebug.replaceAllPatchUsed = true;
           }
         }
         targetDebug.contentPatchPreview = contentPatch.slice(0, 12000);
-        patch = normalizePatch(target.docsPath, docContent, contentPatch);
+        patch = normalizePatch(target.docsPath, docContent, contentPatch, docExists);
       } catch (e) {
         if (!args.llmOnly && target.docsPath === 'docs/ui/home1.md') {
           try {
@@ -755,7 +897,7 @@ const main = async () => {
             if (deterministicPatch) {
               targetDebug.deterministicUiFallbackUsed = true;
               targetDebug.contentPatchPreview = deterministicPatch.slice(0, 12000);
-              patch = normalizePatch(target.docsPath, docContent, deterministicPatch);
+              patch = normalizePatch(target.docsPath, docContent, deterministicPatch, docExists);
               debugReport.targets.push(targetDebug);
               writeSuggestionFiles(outDir, target.docsPath, patch);
               collected.push({ docPath: target.docsPath, patch, matchedFiles: target.matchedFiles });

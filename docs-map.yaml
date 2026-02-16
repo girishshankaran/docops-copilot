@@ -1,9 +1,12 @@
 mappings:
-  - code: "src/api/**/*.ts"
+  - code: "src/api/new-product/**"
     docs:
-      - path: "docs/api.md"
-        anchor: "API"
-      - path: "docs/STYLE.md"
+      - "docs/new-product/overview.md"
+      - "docs/new-product/admin-guide.md"
+      - "docs/new-product/api-guide.md"
+      - "docs/new-product/configuration.md"
+      - "docs/new-product/troubleshooting.md"
+      - "docs/release-notes.md"
   - code: "cli/**"
     docs: "docs/cli.md"
   - code: "config/**/*"
