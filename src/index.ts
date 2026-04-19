@@ -4,31 +4,13 @@ import os from 'os';
 import { execSync, spawnSync } from 'child_process';
 import yaml from 'js-yaml';
 import { Octokit } from '@octokit/rest';
-import { minimatch } from 'minimatch';
 import OpenAI, { AzureOpenAI } from 'openai';
-
-interface DocsMapDocEntry {
-  path: string;
-  anchor?: string;
-}
-
-interface DocsMapMapping {
-  code: string;
-  docs: string | Array<string | DocsMapDocEntry>;
-  anchor?: string;
-}
-
-interface DocsMap {
-  mappings: DocsMapMapping[];
-  fallback?: { search_headings?: boolean };
-  style_guide?: string;
-}
-
-interface TargetDoc {
-  docsPath: string;
-  anchor?: string;
-  matchedFiles: string[];
-}
+import { collectAppContext } from './app-context.js';
+import { loadSupplementalContext } from './context.js';
+import { parseDiffFiles, isDeletedFileDiff } from './analyze-diff.js';
+import { planTargets } from './planner.js';
+import { extractMarkdownSection } from './chunker.js';
+import { AppContextSummary, DocPlanItem, DocsMap, SupplementalContextSummary, TargetDoc } from './types.js';
 
 const loadEnvFile = () => {
   const envPath = path.join(process.cwd(), '.env');
@@ -62,6 +44,13 @@ const parseArgs = () => {
     if (idx >= 0 && args[idx + 1]) return args[idx + 1];
     return fallback;
   };
+  const getAll = (flag: string) => {
+    const values: string[] = [];
+    for (let i = 0; i < args.length; i++) {
+      if (args[i] === flag && args[i + 1]) values.push(args[i + 1]);
+    }
+    return values;
+  };
   const has = (flag: string) => args.includes(flag);
   const buildGatewayUser = (): string | undefined => {
     if (process.env.OPENAI_USER) return process.env.OPENAI_USER;
@@ -92,6 +81,10 @@ const parseArgs = () => {
     verbose: has('--verbose'),
     mock: has('--mock'),
     llmOnly: has('--llm-only') || String(process.env.LLM_ONLY || '').toLowerCase() === 'true',
+    targetMode: get('--target-mode', process.env.TARGET_MODE || 'auto'),
+    contextFiles: getAll('--context-file'),
+    contextDirs: getAll('--context-dir'),
+    offlineDocs: has('--offline-docs'),
   };
 };
 
@@ -122,58 +115,10 @@ const loadDocsMap = (p: string): DocsMap => {
   return parsed;
 };
 
-const parseDiffFiles = (diff: string): Map<string, string> => {
-  const fileToDiff = new Map<string, string>();
-  const lines = diff.split(/\r?\n/);
-  let current: string | null = null;
-  let buffer: string[] = [];
-  const flush = () => {
-    if (current) fileToDiff.set(current, buffer.join('\n'));
-    buffer = [];
-  };
-  for (const line of lines) {
-    if (line.startsWith('diff --git')) {
-      if (current) flush();
-      const parts = line.split(' ');
-      const b = parts[3];
-      const file = b?.replace('b/', '');
-      current = file || null;
-      buffer.push(line);
-      continue;
-    }
-    buffer.push(line);
-  }
-  if (current) flush();
-  return fileToDiff;
-};
-
-const isDeletedFileDiff = (fileDiff: string): boolean => {
-  if (!fileDiff) return false;
-  if (/^deleted file mode\s+/m.test(fileDiff)) return true;
-  if (/^---\s+a\/.+$/m.test(fileDiff) && /^\+\+\+\s+\/dev\/null$/m.test(fileDiff)) return true;
-  return false;
-};
-
-const resolveTargets = (files: string[], map: DocsMap): TargetDoc[] => {
-  const byDoc = new Map<string, TargetDoc>();
-  const keyOf = (docsPath: string, anchor?: string) => `${docsPath}::${anchor || ''}`;
-  for (const m of map.mappings) {
-    const matched = files.filter((f) => minimatch(f, m.code, { dot: true }));
-    if (matched.length === 0) continue;
-    const docsEntries: DocsMapDocEntry[] = typeof m.docs === 'string'
-      ? [{ path: m.docs, anchor: m.anchor }]
-      : m.docs.map((d) => (typeof d === 'string' ? { path: d, anchor: m.anchor } : { path: d.path, anchor: d.anchor || m.anchor }));
-    for (const entry of docsEntries) {
-      const key = keyOf(entry.path, entry.anchor);
-      const existing = byDoc.get(key);
-      if (!existing) {
-        byDoc.set(key, { docsPath: entry.path, anchor: entry.anchor, matchedFiles: Array.from(new Set(matched)) });
-      } else {
-        existing.matchedFiles = Array.from(new Set([...existing.matchedFiles, ...matched]));
-      }
-    }
-  }
-  return Array.from(byDoc.values());
+const loadDocsMapOptional = (p: string): DocsMap | undefined => {
+  const content = readFileSafe(p);
+  if (!content) return undefined;
+  return loadDocsMap(p);
 };
 
 const fetchFileFromRepo = async (octokit: Octokit, repo: string, filePath: string, ref: string): Promise<string> => {
@@ -184,24 +129,7 @@ const fetchFileFromRepo = async (octokit: Octokit, repo: string, filePath: strin
   return buff.toString('utf8');
 };
 
-const extractSection = (content: string, anchor?: string): string => {
-  if (!anchor) return content;
-  const lines = content.split(/\r?\n/);
-  const heading = anchor.replace(/^#+\s*/, '').trim().toLowerCase();
-  let start = 0;
-  for (let i = 0; i < lines.length; i++) {
-    const l = lines[i];
-    if (l.startsWith('#')) {
-      const clean = l.replace(/^#+\s*/, '').trim().toLowerCase();
-      if (clean === heading) {
-        start = i;
-        break;
-      }
-    }
-  }
-  const snippet = lines.slice(start).join('\n');
-  return snippet.length > 2400 ? snippet.slice(0, 2400) : snippet;
-};
+
 
 const buildPrompt = (params: {
   diff: string;
@@ -248,9 +176,17 @@ const buildFullDocPrompt = (params: {
   docPath: string;
   docContent: string;
   styleGuide?: string;
+  supplementalContext?: SupplementalContextSummary;
+  appContext?: AppContextSummary;
 }): string => {
-  const { diff, docPath, docContent, styleGuide } = params;
+  const { diff, docPath, docContent, styleGuide, supplementalContext, appContext } = params;
   const guideBlock = styleGuide ? `Style guide (respect tone, voice, formatting):\n${styleGuide}\n` : '';
+  const contextBlock = supplementalContext?.combinedSummary
+    ? `Additional product/reference context (use this to improve terminology, intent, and user-facing explanation; do not contradict the code diff):\n${supplementalContext.combinedSummary}\n`
+    : '';
+  const appContextBlock = appContext?.combinedSummary
+    ? `Additional application code context from key files (use this when the diff alone is insufficient, but do not document behavior not supported by the codebase):\n${appContext.combinedSummary}\n`
+    : '';
   const standardsBlock = [
     'Documentation standards:',
     '- For feature docs, keep documentation for a feature in a single Markdown file and include these sections when applicable:',
@@ -267,6 +203,8 @@ const buildFullDocPrompt = (params: {
   return [
     'You are an expert technical writer. Update the Markdown documentation based on the provided code diff.',
     guideBlock,
+    contextBlock,
+    appContextBlock,
     standardsBlock,
     `Target doc: ${docPath}`,
     'Editing rules (strict):',
@@ -280,6 +218,43 @@ const buildFullDocPrompt = (params: {
     'Current doc content:',
     docContent,
     'Return the COMPLETE updated Markdown document content only.',
+    'Do not include code fences.',
+  ].filter(Boolean).join('\n\n');
+};
+
+const buildSectionPrompt = (params: {
+  diff: string;
+  docPath: string;
+  sectionContent: string;
+  styleGuide?: string;
+  supplementalContext?: SupplementalContextSummary;
+  appContext?: AppContextSummary;
+}): string => {
+  const { diff, docPath, sectionContent, styleGuide, supplementalContext, appContext } = params;
+  const guideBlock = styleGuide ? `Style guide (respect tone, voice, formatting):\n${styleGuide}\n` : '';
+  const contextBlock = supplementalContext?.combinedSummary
+    ? `Additional product/reference context (use this to improve terminology, intent, and user-facing explanation; do not contradict the code diff):\n${supplementalContext.combinedSummary}\n`
+    : '';
+  const appContextBlock = appContext?.combinedSummary
+    ? `Additional application code context from key files (use this when the diff alone is insufficient, but do not document behavior not supported by the codebase):\n${appContext.combinedSummary}\n`
+    : '';
+  return [
+    'You are an expert technical writer. Update the specific Markdown section based on the provided code diff.',
+    guideBlock,
+    contextBlock,
+    appContextBlock,
+    `Target doc: ${docPath}`,
+    'Editing rules (strict):',
+    '- Keep unchanged lines verbatim whenever possible.',
+    '- Only modify parts of the section directly impacted by the provided code diff.',
+    '- Do not rewrite style/wording of unaffected content.',
+    '- Preserve existing Markdown structure.',
+    '- IMPORTANT: You are only editing a specific section of the document. Do NOT output the entire document, and do NOT add boilerplate (like <html> tags) unless it existed in the original section.',
+    'Code diff:',
+    diff,
+    'Current section content:',
+    sectionContent,
+    'Return the COMPLETE updated Markdown section content only.',
     'Do not include code fences.',
   ].filter(Boolean).join('\n\n');
 };
@@ -395,13 +370,20 @@ const fixBareHunkHeaders = (patch: string): string => {
   return out.join('\n');
 };
 
-const checkPatchApplicable = (docPath: string, docContent: string, patch: string): { ok: boolean; error?: string } => {
+const checkPatchApplicable = (
+  docPath: string,
+  docContent: string,
+  patch: string,
+  options?: { docExists?: boolean },
+): { ok: boolean; error?: string } => {
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'docops-patch-check-'));
   try {
     // git apply expects the working-tree-relative path after stripping a/ b/ prefixes.
     const targetPath = path.join(tmpRoot, docPath);
-    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-    fs.writeFileSync(targetPath, docContent, 'utf8');
+    if (options?.docExists !== false) {
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+      fs.writeFileSync(targetPath, docContent, 'utf8');
+    }
     fs.writeFileSync(path.join(tmpRoot, 'candidate.patch'), patch, 'utf8');
     execSync(`git apply --check "${path.join(tmpRoot, 'candidate.patch')}"`, { cwd: tmpRoot, stdio: 'pipe' });
     return { ok: true };
@@ -413,15 +395,15 @@ const checkPatchApplicable = (docPath: string, docContent: string, patch: string
   }
 };
 
-const normalizePatch = (docPath: string, docContent: string, patch: string): string => {
+const normalizePatch = (docPath: string, docContent: string, patch: string, options?: { docExists?: boolean }): string => {
   const normalized = patch.replace(/\r\n/g, '\n');
   const candidate = normalized.endsWith('\n') ? normalized : `${normalized}\n`;
-  const first = checkPatchApplicable(docPath, docContent, candidate);
+  const first = checkPatchApplicable(docPath, docContent, candidate, options);
   if (first.ok) return candidate;
   const fixed = fixBareHunkHeaders(candidate);
   if (fixed !== candidate) {
     const fixedWithNl = fixed.endsWith('\n') ? fixed : `${fixed}\n`;
-    const second = checkPatchApplicable(docPath, docContent, fixedWithNl);
+    const second = checkPatchApplicable(docPath, docContent, fixedWithNl, options);
     if (second.ok) return fixedWithNl;
     throw new Error(`Generated patch for ${docPath} is invalid/corrupt (${second.error || 'check failed'})`);
   }
@@ -498,6 +480,34 @@ const buildDeleteFilePatch = (docPath: string, oldContent: string): string => {
       deletedMode,
       `--- a/${docPath}`,
       '+++ /dev/null',
+      hunks,
+    ].join('\n').replace(/\n*$/, '\n');
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+};
+
+const buildCreateFilePatch = (docPath: string, newContent: string): string => {
+  const normalizedNew = newContent.replace(/\r\n/g, '\n');
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'docops-create-diff-'));
+  try {
+    const newPath = path.join(tmpRoot, 'new.md');
+    fs.writeFileSync(newPath, normalizedNew, 'utf8');
+    const res = spawnSync('git', ['diff', '--no-index', '--unified=3', '/dev/null', newPath], { encoding: 'utf8' });
+    if (res.status !== 0 && res.status !== 1) {
+      throw new Error(res.stderr?.trim() || `git diff failed with status ${res.status}`);
+    }
+    const raw = (res.stdout || '').replace(/\r\n/g, '\n');
+    const lines = raw.split('\n');
+    const newFileMode = lines.find((l) => l.startsWith('new file mode')) || 'new file mode 100644';
+    const hunkStart = lines.findIndex((l) => l.startsWith('@@ '));
+    if (hunkStart < 0) throw new Error(`failed to build create patch hunk for ${docPath}`);
+    const hunks = lines.slice(hunkStart).join('\n').replace(/\n*$/, '\n');
+    return [
+      `diff --git a/${docPath} b/${docPath}`,
+      newFileMode,
+      '--- /dev/null',
+      `+++ b/${docPath}`,
       hunks,
     ].join('\n').replace(/\n*$/, '\n');
   } finally {
@@ -603,6 +613,42 @@ const buildCommentBody = (items: { docPath: string; patch: string; matchedFiles:
   return lines.join('\n');
 };
 
+const buildDocPlan = (targets: TargetDoc[], fileDiffs: Map<string, string>, options?: { offlineDocs?: boolean }): DocPlanItem[] =>
+  targets.map((target) => {
+    const deletionOnlyTarget = target.matchedFiles.length > 0
+      && target.matchedFiles.every((f) => isDeletedFileDiff(fileDiffs.get(f) || ''));
+    const docExists = options?.offlineDocs ? false : target.docExists !== false;
+    const operation: DocPlanItem['operation'] = deletionOnlyTarget && !/release-notes\.md$/i.test(target.docsPath)
+      ? 'delete'
+      : docExists ? 'update' : 'create';
+    return {
+      docPath: target.docsPath,
+      matchedFiles: target.matchedFiles,
+      source: target.source,
+      docExists,
+      operation,
+      rationale: target.rationale,
+      anchor: target.anchor,
+    };
+  });
+
+const buildDocPlanArtifact = (
+  docPlan: DocPlanItem[],
+  supplementalContext?: SupplementalContextSummary,
+  appContext?: AppContextSummary,
+) => ({
+  generatedAt: new Date().toISOString(),
+  contextSources: supplementalContext?.items.map((item) => ({
+    path: item.path,
+    label: item.label,
+  })) || [],
+  appContextFiles: appContext?.files.map((file) => ({
+    path: file.path,
+    reason: file.reason,
+  })) || [],
+  items: docPlan,
+});
+
 interface TargetRunReport {
   docPath: string;
   matchedFiles: string[];
@@ -610,6 +656,8 @@ interface TargetRunReport {
   reason?: string;
   strictRetry?: boolean;
   contentFallback?: boolean;
+  source?: 'mapped' | 'inferred';
+  docExists?: boolean;
 }
 
 interface TargetDebugReport {
@@ -617,6 +665,9 @@ interface TargetDebugReport {
   matchedFiles: string[];
   combinedDiffChars: number;
   combinedDiffPreview: string;
+  source?: 'mapped' | 'inferred';
+  rationale?: string;
+  docExists?: boolean;
   snippetChars?: number;
   promptChars?: number;
   promptPreview?: string;
@@ -641,16 +692,38 @@ const main = async () => {
   const outDir = args.outDir || 'suggestions';
   const diff = args.diffPath ? readFileSafe(args.diffPath) : undefined;
   if (!diff) throw new Error('diff is required; pass --diff path');
-  const docsMap = loadDocsMap(docsMapPath);
   const fileDiffs = parseDiffFiles(diff);
   const changedFiles = Array.from(fileDiffs.keys());
-  const targets = resolveTargets(changedFiles, docsMap);
   ensureDir(outDir);
+  const supplementalContext = loadSupplementalContext(args.contextFiles || [], args.contextDirs || []);
+  const appContext = collectAppContext(process.cwd(), changedFiles);
+  const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+  const docsMap = loadDocsMapOptional(docsMapPath);
+  const planning = await planTargets({
+    changedFiles,
+    docsMap,
+    docsMapPath,
+    docsRepo,
+    docsBranch,
+    octokit,
+    targetMode: args.targetMode || 'auto',
+    supplementalContext,
+    appContext,
+    offlineDocs: args.offlineDocs,
+    fetchFileFromRepo,
+  });
+  const targets = planning.targets;
+  const docPlan = buildDocPlan(targets, fileDiffs, { offlineDocs: args.offlineDocs });
+  const docPlanArtifact = buildDocPlanArtifact(docPlan, supplementalContext, appContext);
   const runReport: {
     generatedAt: string;
     changedFiles: string[];
     targetCount: number;
     generatedPatchCount: number;
+    usedDocsMap?: boolean;
+    docsRepoEmpty?: boolean;
+    contextSources?: Array<{ path: string; label: string }>;
+    appContextFiles?: Array<{ path: string; reason: string }>;
     note?: string;
     targets: TargetRunReport[];
   } = {
@@ -658,6 +731,10 @@ const main = async () => {
     changedFiles,
     targetCount: targets.length,
     generatedPatchCount: 0,
+    usedDocsMap: planning.usedDocsMap,
+    docsRepoEmpty: planning.docsRepoEmpty,
+    contextSources: supplementalContext?.items.map((item) => ({ path: item.path, label: item.label })) || [],
+    appContextFiles: appContext?.files.map((file) => ({ path: file.path, reason: file.reason })) || [],
     targets: [],
   };
   const debugReport: {
@@ -665,31 +742,71 @@ const main = async () => {
     model: string;
     changedFiles: string[];
     targetCount: number;
+    usedDocsMap?: boolean;
+    docsRepoEmpty?: boolean;
+    planningNote?: string;
+    contextSummaryPreview?: string;
+    appContextSummaryPreview?: string;
     targets: TargetDebugReport[];
   } = {
     generatedAt: new Date().toISOString(),
     model: args.model || 'gpt-4o-mini',
     changedFiles,
     targetCount: targets.length,
+    usedDocsMap: planning.usedDocsMap,
+    docsRepoEmpty: planning.docsRepoEmpty,
+    planningNote: planning.note,
+    contextSummaryPreview: supplementalContext?.combinedSummary.slice(0, 4000),
+    appContextSummaryPreview: appContext?.combinedSummary.slice(0, 4000),
     targets: [],
   };
+  if (planning.note) runReport.note = planning.note;
   if (targets.length === 0) {
     console.log('No matching docs for changed files.');
-    runReport.note = 'No docs-map targets matched changed files.';
+    runReport.note = planning.note || 'No doc targets matched changed files.';
+    fs.writeFileSync(path.join(outDir, 'doc-plan.json'), JSON.stringify(docPlanArtifact, null, 2), 'utf8');
+    if (supplementalContext) {
+      fs.writeFileSync(path.join(outDir, 'context-summary.json'), JSON.stringify({
+        generatedAt: new Date().toISOString(),
+        combinedSummary: supplementalContext.combinedSummary,
+        items: supplementalContext.items.map((item) => ({
+          path: item.path,
+          label: item.label,
+          excerpt: item.excerpt,
+        })),
+      }, null, 2), 'utf8');
+    }
+    if (appContext) {
+      fs.writeFileSync(path.join(outDir, 'app-context-summary.json'), JSON.stringify({
+        generatedAt: new Date().toISOString(),
+        combinedSummary: appContext.combinedSummary,
+        files: appContext.files,
+      }, null, 2), 'utf8');
+    }
     fs.writeFileSync(path.join(outDir, 'run-report.json'), JSON.stringify(runReport, null, 2), 'utf8');
     fs.writeFileSync(path.join(outDir, 'llm-input-debug.json'), JSON.stringify(debugReport, null, 2), 'utf8');
     fs.writeFileSync(path.join(outDir, 'suggestions.md'), 'No matching docs for changed files.\n', 'utf8');
     return;
   }
 
-  const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
   const clientBundle = createClient(args);
   if (!args.mock && !clientBundle) {
     throw new Error('Missing LLM credentials: set AZURE_OPENAI_API_KEY (or OPENAI_API_KEY fallback), or use --mock');
   }
 
-  const styleGuidePath = args.styleGuidePath || docsMap.style_guide;
-  const styleGuide = styleGuidePath ? await fetchFileFromRepo(octokit, docsRepo, styleGuidePath, docsBranch) : undefined;
+  const styleGuidePath = args.styleGuidePath || planning.styleGuidePath;
+  let styleGuide: string | undefined;
+  if (styleGuidePath && !args.offlineDocs) {
+    try {
+      styleGuide = await fetchFileFromRepo(octokit, docsRepo, styleGuidePath, docsBranch);
+    } catch (e) {
+      if (planning.docsRepoEmpty) {
+        runReport.note = `${runReport.note ? `${runReport.note} ` : ''}Style guide missing in docs repo; continuing without it.`;
+      } else {
+        throw e;
+      }
+    }
+  }
 
   const collected: { docPath: string; patch: string; matchedFiles: string[] }[] = [];
 
@@ -699,45 +816,77 @@ const main = async () => {
       matchedFiles: target.matchedFiles,
       combinedDiffChars: 0,
       combinedDiffPreview: '',
+      source: target.source,
+      rationale: target.rationale,
+      docExists: target.docExists,
     };
     const deletionOnlyTarget = target.matchedFiles.length > 0
       && target.matchedFiles.every((f) => isDeletedFileDiff(fileDiffs.get(f) || ''));
     const deleteTargetDoc = deletionOnlyTarget && !/release-notes\.md$/i.test(target.docsPath);
-    let docContent: string;
-    try {
-      docContent = await fetchFileFromRepo(octokit, docsRepo, target.docsPath, docsBranch);
-    } catch (e) {
-      const msg = (e as Error).message;
-      if (deleteTargetDoc && /Not Found/i.test(msg)) {
-        debugReport.targets.push(targetDebug);
-        runReport.targets.push({
-          docPath: target.docsPath,
-          matchedFiles: target.matchedFiles,
-          status: 'skipped_no_change',
-          reason: 'Target doc already absent for delete-only code changes.',
-        });
-        console.log(`No doc deletion needed for ${target.docsPath}; file already absent.`);
-        continue;
+    let docContent = '';
+    let docExists = target.docExists !== false;
+    if (!args.offlineDocs) {
+      try {
+        docContent = await fetchFileFromRepo(octokit, docsRepo, target.docsPath, docsBranch);
+        docExists = true;
+      } catch (e) {
+        const msg = (e as Error).message;
+        if (/Not Found/i.test(msg)) {
+          docExists = false;
+          targetDebug.docExists = false;
+          if (deleteTargetDoc) {
+            debugReport.targets.push(targetDebug);
+            runReport.targets.push({
+              docPath: target.docsPath,
+              matchedFiles: target.matchedFiles,
+              status: 'skipped_no_change',
+              reason: 'Target doc already absent for delete-only code changes.',
+              source: target.source,
+              docExists: false,
+            });
+            console.log(`No doc deletion needed for ${target.docsPath}; file already absent.`);
+            continue;
+          }
+        } else {
+          debugReport.targets.push(targetDebug);
+          runReport.targets.push({
+            docPath: target.docsPath,
+            matchedFiles: target.matchedFiles,
+            status: 'fetch_failed',
+            reason: msg,
+            source: target.source,
+            docExists: target.docExists,
+          });
+          console.warn(`Skipping ${target.docsPath}: ${msg}`);
+          continue;
+        }
       }
+    } else {
+      docExists = false;
+      targetDebug.docExists = false;
+    }
+    const chunk = extractMarkdownSection(docContent, target.anchor);
+    const combinedDiff = target.matchedFiles.map((f) => fileDiffs.get(f) || '').join('\n');
+    targetDebug.combinedDiffChars = combinedDiff.length;
+    targetDebug.combinedDiffPreview = combinedDiff.slice(0, 1600);
+    targetDebug.snippetChars = chunk.section.length;
+    if (deleteTargetDoc && !docExists) {
       debugReport.targets.push(targetDebug);
       runReport.targets.push({
         docPath: target.docsPath,
         matchedFiles: target.matchedFiles,
-        status: 'fetch_failed',
-        reason: msg,
+        status: 'skipped_no_change',
+        reason: 'Target doc already absent for delete-only code changes.',
+        source: target.source,
+        docExists: false,
       });
-      console.warn(`Skipping ${target.docsPath}: ${msg}`);
+      console.log(`No doc deletion needed for ${target.docsPath}; file already absent.`);
       continue;
     }
-    const snippet = extractSection(docContent, target.anchor);
-    const combinedDiff = target.matchedFiles.map((f) => fileDiffs.get(f) || '').join('\n');
-    targetDebug.combinedDiffChars = combinedDiff.length;
-    targetDebug.combinedDiffPreview = combinedDiff.slice(0, 1600);
-    targetDebug.snippetChars = snippet.length;
     if (deleteTargetDoc) {
       const deletePatch = buildDeleteFilePatch(target.docsPath, docContent);
       targetDebug.contentPatchPreview = deletePatch.slice(0, 12000);
-      const normalizedDeletePatch = normalizePatch(target.docsPath, docContent, deletePatch);
+      const normalizedDeletePatch = normalizePatch(target.docsPath, docContent, deletePatch, { docExists });
       debugReport.targets.push(targetDebug);
       writeSuggestionFiles(outDir, target.docsPath, normalizedDeletePatch);
       collected.push({ docPath: target.docsPath, patch: normalizedDeletePatch, matchedFiles: target.matchedFiles });
@@ -747,6 +896,8 @@ const main = async () => {
         status: 'generated',
         strictRetry: false,
         contentFallback: false,
+        source: target.source,
+        docExists,
       });
       continue;
     }
@@ -758,26 +909,54 @@ const main = async () => {
     } else {
       if (!clientBundle) throw new Error('LLM client not initialized');
       try {
-        const fullDocPrompt = buildFullDocPrompt({
-          diff: combinedDiff,
-          docPath: target.docsPath,
-          docContent,
-          styleGuide,
-        });
-        targetDebug.fullDocPromptChars = fullDocPrompt.length;
-        targetDebug.fullDocPromptPreview = fullDocPrompt.slice(0, 12000);
-        const full = await generateUpdatedDoc(clientBundle!.client, clientBundle!.model, fullDocPrompt, args.user);
-        targetDebug.fullDocResponsePreview = full.raw.slice(0, 12000);
-        const updatedDoc = full.doc;
-        let contentPatch = buildPatchFromContent(target.docsPath, docContent, updatedDoc);
+        let updatedDoc = '';
+        if (chunk.found) {
+          const sectionPrompt = buildSectionPrompt({
+            diff: combinedDiff,
+            docPath: target.docsPath,
+            sectionContent: chunk.section,
+            styleGuide,
+            supplementalContext,
+            appContext,
+          });
+          targetDebug.fullDocPromptChars = sectionPrompt.length;
+          targetDebug.fullDocPromptPreview = sectionPrompt.slice(0, 12000);
+          const sectionUpdate = await generateUpdatedDoc(clientBundle!.client, clientBundle!.model, sectionPrompt, args.user);
+          targetDebug.fullDocResponsePreview = sectionUpdate.raw.slice(0, 12000);
+          
+          const updatedDocParts = [];
+          if (chunk.before) updatedDocParts.push(chunk.before);
+          updatedDocParts.push(sectionUpdate.doc);
+          if (chunk.after) updatedDocParts.push(chunk.after);
+          updatedDoc = updatedDocParts.join('\n');
+        } else {
+          const fullDocPrompt = buildFullDocPrompt({
+            diff: combinedDiff,
+            docPath: target.docsPath,
+            docContent,
+            styleGuide,
+            supplementalContext,
+            appContext,
+          });
+          targetDebug.fullDocPromptChars = fullDocPrompt.length;
+          targetDebug.fullDocPromptPreview = fullDocPrompt.slice(0, 12000);
+          const full = await generateUpdatedDoc(clientBundle!.client, clientBundle!.model, fullDocPrompt, args.user);
+          targetDebug.fullDocResponsePreview = full.raw.slice(0, 12000);
+          updatedDoc = full.doc;
+        }
+        let contentPatch = docExists
+          ? buildPatchFromContent(target.docsPath, docContent, updatedDoc)
+          : buildCreateFilePatch(target.docsPath, updatedDoc);
         if (!contentPatch) {
           if (!args.llmOnly && target.docsPath === 'docs/ui/home1.md') {
             const deterministicDoc = buildDeterministicUiDocUpdate(docContent, combinedDiff);
-            const deterministicPatch = buildPatchFromContent(target.docsPath, docContent, deterministicDoc);
+            const deterministicPatch = docExists
+              ? buildPatchFromContent(target.docsPath, docContent, deterministicDoc)
+              : buildCreateFilePatch(target.docsPath, deterministicDoc);
             if (deterministicPatch) {
               targetDebug.deterministicUiFallbackUsed = true;
               targetDebug.contentPatchPreview = deterministicPatch.slice(0, 12000);
-              patch = normalizePatch(target.docsPath, docContent, deterministicPatch);
+              patch = normalizePatch(target.docsPath, docContent, deterministicPatch, { docExists });
               debugReport.targets.push(targetDebug);
               writeSuggestionFiles(outDir, target.docsPath, patch);
               collected.push({ docPath: target.docsPath, patch, matchedFiles: target.matchedFiles });
@@ -787,6 +966,8 @@ const main = async () => {
                 status: 'generated',
                 strictRetry,
                 contentFallback,
+                source: target.source,
+                docExists,
               });
               continue;
             }
@@ -799,28 +980,32 @@ const main = async () => {
             reason: 'LLM full-doc generation produced no content changes.',
             strictRetry,
             contentFallback,
+            source: target.source,
+            docExists,
           });
           console.log(`No doc changes for ${target.docsPath} after LLM full-doc generation.`);
           continue;
         }
-        if (!checkPatchApplicable(target.docsPath, docContent, contentPatch).ok) {
+        if (!checkPatchApplicable(target.docsPath, docContent, contentPatch, { docExists }).ok) {
           const replaceAllPatch = buildReplaceAllPatch(target.docsPath, docContent, updatedDoc);
-          if (!args.llmOnly && checkPatchApplicable(target.docsPath, docContent, replaceAllPatch).ok) {
+          if (docExists && !args.llmOnly && checkPatchApplicable(target.docsPath, docContent, replaceAllPatch, { docExists }).ok) {
             contentPatch = replaceAllPatch;
             targetDebug.replaceAllPatchUsed = true;
           }
         }
         targetDebug.contentPatchPreview = contentPatch.slice(0, 12000);
-        patch = normalizePatch(target.docsPath, docContent, contentPatch);
+        patch = normalizePatch(target.docsPath, docContent, contentPatch, { docExists });
       } catch (e) {
         if (!args.llmOnly && target.docsPath === 'docs/ui/home1.md') {
           try {
             const deterministicDoc = buildDeterministicUiDocUpdate(docContent, combinedDiff);
-            const deterministicPatch = buildPatchFromContent(target.docsPath, docContent, deterministicDoc);
+            const deterministicPatch = docExists
+              ? buildPatchFromContent(target.docsPath, docContent, deterministicDoc)
+              : buildCreateFilePatch(target.docsPath, deterministicDoc);
             if (deterministicPatch) {
               targetDebug.deterministicUiFallbackUsed = true;
               targetDebug.contentPatchPreview = deterministicPatch.slice(0, 12000);
-              patch = normalizePatch(target.docsPath, docContent, deterministicPatch);
+              patch = normalizePatch(target.docsPath, docContent, deterministicPatch, { docExists });
               debugReport.targets.push(targetDebug);
               writeSuggestionFiles(outDir, target.docsPath, patch);
               collected.push({ docPath: target.docsPath, patch, matchedFiles: target.matchedFiles });
@@ -830,6 +1015,8 @@ const main = async () => {
                 status: 'generated',
                 strictRetry,
                 contentFallback,
+                source: target.source,
+                docExists,
               });
               continue;
             }
@@ -847,6 +1034,8 @@ const main = async () => {
           reason: (e as Error).message,
           strictRetry,
           contentFallback,
+          source: target.source,
+          docExists,
         });
         continue;
       }
@@ -860,9 +1049,30 @@ const main = async () => {
       status: 'generated',
       strictRetry,
       contentFallback,
+      source: target.source,
+      docExists,
     });
   }
   runReport.generatedPatchCount = collected.length;
+  fs.writeFileSync(path.join(outDir, 'doc-plan.json'), JSON.stringify(docPlanArtifact, null, 2), 'utf8');
+  if (supplementalContext) {
+    fs.writeFileSync(path.join(outDir, 'context-summary.json'), JSON.stringify({
+      generatedAt: new Date().toISOString(),
+      combinedSummary: supplementalContext.combinedSummary,
+      items: supplementalContext.items.map((item) => ({
+        path: item.path,
+        label: item.label,
+        excerpt: item.excerpt,
+      })),
+    }, null, 2), 'utf8');
+  }
+  if (appContext) {
+    fs.writeFileSync(path.join(outDir, 'app-context-summary.json'), JSON.stringify({
+      generatedAt: new Date().toISOString(),
+      combinedSummary: appContext.combinedSummary,
+      files: appContext.files,
+    }, null, 2), 'utf8');
+  }
   fs.writeFileSync(path.join(outDir, 'run-report.json'), JSON.stringify(runReport, null, 2), 'utf8');
   fs.writeFileSync(path.join(outDir, 'llm-input-debug.json'), JSON.stringify(debugReport, null, 2), 'utf8');
 
