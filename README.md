@@ -4,10 +4,13 @@ AI-assisted bridge between code changes and Markdown documentation across two Gi
 
 ## What it does
 - Watches code changes on `main`/`copilot` pushes and PRs targeting `main`/`copilot`, then reads the git diff.
-- Maps changed files to relevant docs via `docs-map.yaml` globs.
+- Uses the diff first, then selectively scans key app files (changed files, nearby modules, and canonical repo files like `README.md` or `package.json`) when additional code context is useful.
+- Maps changed files to relevant docs via `docs-map.yaml` globs, or infers target docs by indexing the docs repo when no mapping is available.
 - For each target doc, fetches the current Markdown from the docs repo, feeds the code diff + doc snippet + style guide to an LLM, and returns a unified patch.
 - Writes patches to `suggestions/` and can optionally post them as a PR comment in the code repo.
+- Emits `doc-plan.json` so target selection is reviewable before patch application.
 - A companion workflow in the docs repo applies patches on maintainer command, runs lint/build, and opens/updates a docs PR.
+- If the docs repo is empty, it can infer bootstrap target paths and generate new-file patches instead of only updating existing docs.
 
 ## Quick start (local dry run)
 1) Copy `docs-map.example.yaml` to `docs-map.yaml` and edit mappings.
@@ -23,7 +26,9 @@ AI-assisted bridge between code changes and Markdown documentation across two Gi
      --docs-map docs-map.yaml \
      --docs-repo your-org/your-docs-repo \
      --docs-branch main \
-     --out-dir suggestions
+     --out-dir suggestions \
+     --context-file references/prd.md \
+     --context-file references/jira-123.txt
    ```
    Patches land in `suggestions/` and `suggestions.md` holds a ready-to-post comment.
 
@@ -33,6 +38,21 @@ Validate the same auth path used by GitHub Actions:
 scripts/preflight-doc-suggest.sh
 ```
 It checks token minting (or static token fallback), docs repo token access, and Chat-AI auth.
+
+## Local workflow smoke test
+Run a mock end-to-end workflow test with a sample diff and sample PRD context:
+```bash
+scripts/test-local-workflow.sh
+```
+It writes sample outputs under `/tmp/docops-local-test/out` by default.
+The smoke test uses `--offline-docs` so it can run without GitHub access by treating the docs repo as empty.
+
+## Local real-mode test
+Run the same sample scenario against your real docs repo and LLM configuration:
+```bash
+DOCS_REPO=your-org/your-docs-repo scripts/test-local-workflow-real.sh
+```
+It runs [scripts/preflight-doc-suggest.sh](/Users/gisankar/Documents/DocOPs-Copilot/scripts/preflight-doc-suggest.sh) first, then writes outputs under `/tmp/docops-local-real-test/out` by default.
 
 ## GitHub Actions wiring
 ### In the code repo (`.github/workflows/doc-suggest.yml`)
@@ -139,6 +159,20 @@ jobs:
   - an array of objects with per-doc anchors (`path` + optional `anchor`).
 - If multiple mappings target the same doc, matched code files are merged and one patch is generated for that doc target.
 - Style guide is optional; when present it is fed to the model to preserve tone.
+- Target selection modes:
+  - `--target-mode auto` (default): use `docs-map.yaml` when it yields targets, otherwise infer from the docs repo index.
+  - `--target-mode infer`: ignore `docs-map.yaml` and infer doc targets.
+  - `--target-mode map`: require `docs-map.yaml` and only use mapped targets.
+- Supplemental context:
+  - Use repeatable `--context-file <path>` flags for PRDs, Jira exports, design notes, or reference docs.
+  - Use repeatable `--context-dir <path>` flags to ingest a folder of Markdown, text, JSON, or YAML files.
+  - The tool summarizes this context into a bounded prompt block and writes `context-summary.json` plus source provenance into `doc-plan.json`.
+  - Supplemental context is optional. When present, it biases both doc planning and doc generation; when absent, the tool falls back to code diff analysis plus docs repo indexing.
+- App repo context:
+  - The tool automatically collects bounded context from key app files and writes `app-context-summary.json`.
+  - This targeted scan is used to improve planning and generation when the diff alone lacks enough surrounding code context.
+- Offline docs mode:
+  - Use `--offline-docs` for local testing when you want to skip GitHub docs repo access and treat the docs repo as empty.
 - LLM config:
   - Cisco Chat-AI gateway (recommended): set `BRIDGE_OAUTH_BASIC` (used to mint fresh short-lived JWT per run) and `BRIDGE_API_APP_KEY` (app key used in request `user`), plus `OPENAI_BASE_URL`/`OPENAI_MODEL`.
   - Fallback static token mode: set `AZURE_OPENAI_API_KEY` (or `OPENAI_API_KEY`) if you cannot mint tokens in workflow.
@@ -179,6 +213,11 @@ jobs:
 
 ## Project structure
 - `src/index.ts` – main CLI to generate doc patches from code diff.
+- `src/planner.ts` – doc target planning and inference logic.
+- `src/analyze-diff.ts` – diff parsing helpers.
+- `src/context.ts` – supplemental context ingestion and summarization.
+- `src/app-context.ts` – targeted app repo context collection.
+- `src/types.ts` – shared planning and docs-map types.
 - `src/apply-patch.ts` – convenience helper to apply a saved patch via `git apply`.
 - `docs-map.example.yaml` – starter mapping file.
 - `.env.example` – required secrets.
